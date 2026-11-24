@@ -398,6 +398,34 @@ def health():
     })
 
 
+@app.post("/api/demo-reset")
+def reset_demo():
+    """Reset the synthetic demo database back to clean Notice v1.0 baseline."""
+    if not session_user_id():
+        return jsonify({"error": "Choose a synthetic demo identity first", "reason_code": "NO_DEMO_IDENTITY"}), 401
+    with db_session(write=True) as con:
+        for table in (
+            "audit_ledger",
+            "system_events",
+            "pending_actions",
+            "revocation_jobs",
+            "access_decisions",
+            "consent_events",
+            "consumer_services",
+            "notices",
+        ):
+            con.execute(f"DELETE FROM {table}")
+        seq_exists = con.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='sqlite_sequence'"
+        ).fetchone()
+        if seq_exists:
+            con.execute("DELETE FROM sqlite_sequence")
+    init_db()
+    session["user_id"] = "student-001"
+    session["role"] = "student"
+    return jsonify({"reset": True, "user_id": "student-001", "notice_version": "1.0"}), 200
+
+
 @app.get("/api/state")
 def state():
     user_id = request.args.get("user_id") or session_user_id()

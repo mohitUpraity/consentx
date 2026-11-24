@@ -21,6 +21,7 @@
         <a class="nav-link" href="#privacy" data-view="privacy"><span class="nav-icon">◈</span>My Privacy</a>
         <a class="nav-link" href="#notices" data-view="notices"><span class="nav-icon">▤</span>Notice versions</a>
         <a class="nav-link" href="#audit" data-view="audit"><span class="nav-icon">≋</span>Audit &amp; verification</a>
+        <a class="nav-link" href="#guide" data-view="guide"><span class="nav-icon">✦</span>Judge Guide</a>
       </nav>
       <div class="sidebar-bottom">
         <span class="live-dot"></span>
@@ -40,11 +41,37 @@
             <option value="{{ uid }}">{{ name }}</option>
             {% endfor %}
           </select>
+          <button id="tour-toggle" class="tour-toggle-btn" type="button" title="Toggle interactive judge walkthrough">✦ Judge Tour <span id="tour-progress-pill" class="tour-pill">0/7</span></button>
           <button id="theme-toggle" class="icon-btn" type="button" title="Toggle light/dark theme" aria-label="Toggle light or dark theme">☾</button>
         </div>
       </header>
 
       <main>
+        <!-- ==================== INTERACTIVE JUDGE TOUR ==================== -->
+        <section id="judge-tour" class="judge-tour panel" aria-label="Interactive Judge Walkthrough">
+          <div class="tour-header">
+            <div>
+              <span class="eyebrow">Self-Guided Hackathon Walkthrough</span>
+              <h2>Interactive Judge Tour — See PS-002 solved end-to-end</h2>
+            </div>
+            <div class="inline-actions">
+              <button id="tour-next-btn" type="button" class="btn-sm">Next incomplete step →</button>
+              <button id="tour-restart-btn" type="button" class="secondary btn-sm" title="Restart the 7-step walkthrough from 0/7 without deleting database records">↺ Restart tour</button>
+              <button id="tour-reset-btn" type="button" class="danger-outline btn-sm" title="Wipe all synthetic demo data and restore Notice v1.0">✕ Reset all data</button>
+              <button id="tour-hide-btn" type="button" class="secondary btn-sm">Hide tour</button>
+            </div>
+          </div>
+          <div id="tour-steps-grid" class="tour-steps-grid"></div>
+          <div class="tour-active-detail">
+            <div>
+              <strong id="tour-active-title">Step 1: Grant P1 only</strong>
+              <p id="tour-active-why" class="tour-why"></p>
+              <p id="tour-active-how" class="tour-how"></p>
+            </div>
+            <button id="tour-jump-btn" type="button" class="secondary btn-sm">Go to step →</button>
+          </div>
+        </section>
+
         <!-- ==================== DASHBOARD ==================== -->
         <section id="view-dashboard" class="view active" aria-labelledby="dashboard-title">
           <div class="page-heading">
@@ -65,6 +92,15 @@
               <p>A withdrawal must stop future requests, cancel queued work, and reach the downstream consumer with verifiable proof. This prototype executes every check on the Flask backend and links all actions in a tamper-evident SHA-256 ledger.</p>
             </div>
           </div>
+
+          <details class="feature-guide">
+            <summary>ℹ How this screen works &amp; what to look for</summary>
+            <div class="feature-guide-grid">
+              <div><strong>What this is</strong><p>The live control center showing Aarav or Mira's current grants across P1–P3, online/offline consumer adapters, recent allow/deny checks, and the active SHA-256 notice digest.</p></div>
+              <div><strong>Why PS-002 needs it</strong><p>Proves ConsentX tracks three separate purposes independently and ties every enforcement decision to real stored database records rather than static mock numbers.</p></div>
+              <div><strong>Try this in 10 seconds</strong><p>Switch Identity in the top bar between <em>Aarav Demo</em> and <em>Mira Demo</em> to see complete user isolation, or open the <strong>Judge Guide</strong> tab for a visual architecture map.</p></div>
+            </div>
+          </details>
 
           <div class="metric-grid">
             <article class="metric-card">
@@ -170,6 +206,15 @@
             <span id="consent-notice-current"></span>
           </div>
 
+          <details class="feature-guide">
+            <summary>ℹ How Consent &amp; Revocation Orchestration works &amp; what to test</summary>
+            <div class="feature-guide-grid">
+              <div><strong>What this is</strong><p>Grant or withdraw P1, P2, and P3 independently. Below the cards are the 3 downstream consumer adapters and the live revocation + queued-work queue.</p></div>
+              <div><strong>Why this beats a static checkbox</strong><p>Withdrawing P1 doesn't just flip a label—it blocks API requests immediately, cancels queued P1 jobs (leaving P2/P3 untouched), dispatches a service instruction, and handles outages honestly.</p></div>
+              <div><strong>Try this in 10 seconds</strong><p>1) Grant P1 → 2) Click <em>Simulate service outage</em> on <code>notification-service</code> → 3) Withdraw P1 → 4) Click <em>Deliver</em> (fails honestly!) → 5) Restore service &amp; click <em>Retry</em> (<code>ACKNOWLEDGED</code>).</p></div>
+            </div>
+          </details>
+
           <div id="purpose-list" class="purpose-list"></div>
           <p id="withdrawal-feedback" class="withdrawal-feedback" aria-live="polite"></p>
 
@@ -220,6 +265,15 @@
             <span class="server-badge"><span class="live-dot"></span>Backend enforced</span>
           </div>
 
+          <details class="feature-guide">
+            <summary>ℹ How the Policy Enforcement Point (PEP) Simulator works &amp; what to test</summary>
+            <div class="feature-guide-grid">
+              <div><strong>What this is</strong><p>A live downstream API client calling <code>POST /api/data-access</code>. Every evaluation runs on the Flask backend before returning even synthetic fields.</p></div>
+              <div><strong>Why PS-002 + USP need it</strong><p>Proves both request-time consent enforcement (<code>ALLOW</code> vs <code>DENY</code>) and ConsentX's extra field, consumer, and operation checks that basic consent toggles lack.</p></div>
+              <div><strong>Try this in 10 seconds</strong><p>Grant P1 first, then click the 4 preset buttons below one by one to see <code>ALLOW</code>, <code>FIELD_SCOPE_EXCEEDED</code>, <code>CONSUMER_PURPOSE_MISMATCH</code>, and <code>OPERATION_NOT_ALLOWED</code>.</p></div>
+            </div>
+          </details>
+
           <div class="preset-bar panel">
             <span class="eyebrow">Quick demo scenarios</span>
             <div class="preset-buttons">
@@ -256,6 +310,7 @@
                 <div id="request-fields"></div>
                 <small>Allowed fields match the selected purpose; out-of-scope fields trigger <code>FIELD_SCOPE_EXCEEDED</code>.</small>
               </fieldset>
+              <div id="sim-live-status" class="sim-live-status">Checking live consent state…</div>
               <button id="request-data" type="button">Evaluate access request</button>
               <div class="request-preview">
                 <div><span class="http-method">POST</span><code>/api/data-access</code></div>
@@ -293,6 +348,15 @@
           </div>
 
           <div id="privacy-alert-banner" class="privacy-alert" hidden></div>
+
+          <details class="feature-guide">
+            <summary>ℹ Why My Privacy &amp; Receipts matter for the data subject</summary>
+            <div class="feature-guide-grid">
+              <div><strong>What this is</strong><p>The student's own transparency view showing current permissions, which service can read which fields, unresolved withdrawals, and downloadable proof.</p></div>
+              <div><strong>Why it matters</strong><p>Users deserve visibility after withdrawing—not just operators. Each receipt links consent event ID, cancelled jobs, notice SHA-256, and adapter acknowledgement.</p></div>
+              <div><strong>Try this in 10 seconds</strong><p>After withdrawing any purpose, click <strong>Printable receipt</strong> to open a print/PDF-ready proof sheet or <strong>JSON receipt</strong> to download machine-readable evidence.</p></div>
+            </div>
+          </details>
 
           <div class="privacy-summary-grid" id="privacy-summary-grid"></div>
 
@@ -339,6 +403,15 @@
             <span id="notice-pill" class="environment-pill">Loading notice…</span>
           </div>
 
+          <details class="feature-guide">
+            <summary>ℹ How Notice Versioning &amp; Role Separation work</summary>
+            <div class="feature-guide-grid">
+              <div><strong>What this is</strong><p>An operator-gated notice publisher that computes SHA-256 digests and automatically flags older consent grants as stale (<code>NOTICE_MISMATCH</code>).</p></div>
+              <div><strong>Why PS-002 needs it</strong><p>Satisfies R-04: if a privacy policy changes, old permissions cannot silently carry over—users must confirm under the new notice hash.</p></div>
+              <div><strong>Try this in 10 seconds</strong><p>Unlock operator mode with the server's configured token (<code>demo-operator-secret</code> in local demo), edit 1 word, publish v2.0, then test P1 in Simulator.</p></div>
+            </div>
+          </details>
+
           <div class="notice-manager-grid">
             <section class="panel notice-editor">
               <span class="eyebrow">Publish a revision</span>
@@ -383,6 +456,15 @@
               <a id="export-csv" href="/api/audit?format=csv">Export CSV</a>
             </div>
           </div>
+
+          <details class="feature-guide">
+            <summary>ℹ How Tamper-Evident SHA-256 Verification &amp; Diagnostics work</summary>
+            <div class="feature-guide-grid">
+              <div><strong>What this is</strong><p>An append-only SHA-256 hash chain linking all 12 event types, a live 8-check backend diagnostic runner, and filtered JSON/CSV exports.</p></div>
+              <div><strong>Why it matters</strong><p>Matches and extends cryptographic audit verification: modifying, deleting, or reordering even one record breaks the chain at that exact ID.</p></div>
+              <div><strong>Try this in 10 seconds</strong><p>Click <strong>Verify audit integrity</strong>, click <strong>Run live diagnostics</strong>, and toggle to <strong>SHA-256 ledger</strong> to inspect linked hashes.</p></div>
+            </div>
+          </details>
 
           <section class="panel integrity-card">
             <div class="panel-heading">
@@ -470,6 +552,100 @@
             </dl>
           </details>
           <p class="scope-note">Automated evidence proves prototype behavior only. It does not establish legal compliance or production security.</p>
+        </section>
+
+        <!-- ==================== JUDGE GUIDE & ARCHITECTURE ==================== -->
+        <section id="view-guide" class="view" aria-labelledby="guide-title">
+          <div class="page-heading">
+            <div>
+              <span class="eyebrow">Self-Guided Overview · PS-002</span>
+              <h1 id="guide-title">Judge Guide &amp; System Architecture</h1>
+              <p>Everything needed to understand ConsentX in two minutes: what problem PS-002 asks, how the pipeline works end-to-end, why this goes far beyond a static checkbox, and how to test every requirement yourself.</p>
+            </div>
+            <span class="scope-chip">v{{ app_version }} · {{ suite_test_count }} automated tests</span>
+          </div>
+
+          <section class="panel guide-section">
+            <span class="eyebrow">End-to-end architecture</span>
+            <h2>How ConsentX turns a user choice into verifiable enforcement</h2>
+            <div class="guide-pipeline">
+              <div class="pipe-step"><span>1</span><strong>Identity &amp; Notice</strong><small>Session-pinned student (<code>Aarav</code>/<code>Mira</code>) + SHA-256 notice version.</small></div>
+              <div class="pipe-step"><span>2</span><strong>3 Isolated Purposes</strong><small>P1 reminders, P2 suggestions, P3 analytics stored append-only.</small></div>
+              <div class="pipe-step"><span>3</span><strong>Field-Scoped PEP</strong><small>6 checks: user, purpose, consumer, READ-only, fields, notice hash.</small></div>
+              <div class="pipe-step"><span>4</span><strong>Revocation Adapters</strong><small>Withdrawals cancel queued jobs &amp; deliver/retry to services.</small></div>
+              <div class="pipe-step"><span>5</span><strong>Receipt &amp; SHA-256</strong><small>User downloads proof; all 12 event types chain into the ledger.</small></div>
+            </div>
+          </section>
+
+          <section class="panel guide-section">
+            <div class="panel-heading">
+              <div>
+                <span class="eyebrow">Problem statement coverage</span>
+                <h2>PS-002 Requirements → Live Feature Map</h2>
+                <p class="field-help">Click any <strong>Show live →</strong> button to inspect that requirement in action.</p>
+              </div>
+            </div>
+            <div class="diagnostics-table-wrap">
+              <table class="diag-table guide-table">
+                <thead>
+                  <tr><th>Req</th><th>PS-002 Requirement</th><th>How ConsentX Solves It</th><th>Inspect Live</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td><strong>R-01</strong></td><td>1 synthetic service &amp; users</td><td>CampusPulse with session-pinned <code>Aarav Demo</code> &amp; <code>Mira Demo</code>.</td><td><button type="button" class="secondary btn-sm" data-jump-view="dashboard">Dashboard →</button></td></tr>
+                  <tr><td><strong>R-02</strong></td><td>Exactly 3 separate purposes</td><td>P1, P2, P3 tracked separately; granting one never unlocks others.</td><td><button type="button" class="secondary btn-sm" data-jump-view="consent">Consent →</button></td></tr>
+                  <tr><td><strong>R-03</strong></td><td>Append-only grant &amp; withdrawal</td><td>Every choice appends a new event with UTC timestamp and notice hash.</td><td><button type="button" class="secondary btn-sm" data-jump-view="consent">Consent →</button></td></tr>
+                  <tr><td><strong>R-04</strong></td><td>Notice version &amp; SHA-256 hash</td><td>Operator-only publishing invalidates stale v1 grants on v2 change.</td><td><button type="button" class="secondary btn-sm" data-jump-view="notices">Notices →</button></td></tr>
+                  <tr><td><strong>R-05</strong></td><td>Request-time downstream PEP</td><td>6-step check + consumer/operation/field-level enforcement + trace.</td><td><button type="button" class="secondary btn-sm" data-jump-view="simulator">Simulator →</button></td></tr>
+                  <tr><td><strong>R-06</strong></td><td>Withdrawal blocks future access</td><td>Immediate <code>403 CONSENT_WITHDRAWN</code> + queue cancel + adapter ack.</td><td><button type="button" class="secondary btn-sm" data-jump-view="privacy">My Privacy →</button></td></tr>
+                  <tr><td><strong>R-07</strong></td><td>Audit trail &amp; JSON/CSV export</td><td>Filtered JSON/CSV + tamper-evident SHA-256 hash-chain verification.</td><td><button type="button" class="secondary btn-sm" data-jump-view="audit">Audit →</button></td></tr>
+                  <tr><td><strong>R-08</strong></td><td>12+ automated lifecycle tests</td><td>{{ suite_test_count }} isolated SQLite tests + 8 in-browser live diagnostics.</td><td><button type="button" class="secondary btn-sm" data-jump-view="audit">Diagnostics →</button></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="panel guide-section">
+            <span class="eyebrow">Key Differentiators (USP)</span>
+            <h2>Why ConsentX goes beyond a static checkbox</h2>
+            <div class="diagnostics-table-wrap">
+              <table class="diag-table guide-table">
+                <thead>
+                  <tr><th>Capability</th><th>Static Checkbox</th><th>Basic DB Toggle</th><th>ConsentX v2.0</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td>Purpose count matches PS-002</td><td>Often hardcoded</td><td>3–4 purposes</td><td><span class="status granted">Strict 3 (P1–P3)</span></td></tr>
+                  <tr><td>Consumer, READ/WRITE &amp; field scope</td><td>No</td><td>No</td><td><span class="status granted">Enforced + presets</span></td></tr>
+                  <tr><td>Cancels queued jobs on withdrawal</td><td>No</td><td>No</td><td><span class="status granted">Scoped cancellation</span></td></tr>
+                  <tr><td>Adapter delivery, outage &amp; retry</td><td>No</td><td>No</td><td><span class="status granted">FAILED → RETRY → ACK</span></td></tr>
+                  <tr><td>Student My Privacy &amp; PDF/JSON Receipt</td><td>No</td><td>No</td><td><span class="status granted">Full receipt + IDs</span></td></tr>
+                  <tr><td>SHA-256 audit integrity verification</td><td>No</td><td>Rare</td><td><span class="status granted">Unified 12-event chain</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="panel guide-section">
+            <span class="eyebrow">Feasibility &amp; honest boundaries</span>
+            <h2>Questions judges commonly ask</h2>
+            <div class="faq-list">
+              <details open>
+                <summary>Isn't this just synthetic mock data?</summary>
+                <p>The payloads are deliberately synthetic as required by PS-002, so the prototype tests the authorization boundary safely without exposing real PII. Every decision, transaction lock (<code>BEGIN IMMEDIATE</code>), adapter failure, and SHA-256 hash runs for real on the Flask + SQLite backend.</p>
+              </details>
+              <details>
+                <summary>How feasible is this in a real production application?</summary>
+                <p>The architecture cleanly separates the PEP (<code>POST /api/data-access</code>), Orchestrator (<code>revocation_jobs</code>), and Consumer Adapters (<code>adapters.py</code>). In production, you swap synthetic session IDs for OIDC/SSO tokens, local adapters for webhooks or Kafka events, and SQLite for PostgreSQL—keeping the exact same enforcement and ledger logic.</p>
+              </details>
+              <details>
+                <summary>Does consumer acknowledgement prove all historical copies were deleted?</summary>
+                <p><strong>No—and ConsentX never makes that false claim.</strong> An acknowledgement proves the simulated service received and processed the withdrawal instruction. Every downloadable receipt explicitly states this boundary.</p>
+              </details>
+              <details>
+                <summary>Why use a persistent disk instead of ephemeral serverless storage?</summary>
+                <p>Serverless platforms use ephemeral <code>/tmp</code> storage for SQLite, losing consent and hash-chain history across cold starts. <code>render.yaml</code> pairs Flask + Gunicorn with a persistent disk (<code>/var/data/consentx.sqlite3</code>).</p>
+              </details>
+            </div>
+          </section>
         </section>
       </main>
     </div>

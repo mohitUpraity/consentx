@@ -52,8 +52,8 @@ This is a staged plan. Roadmap entries describe intended work and are not claims
 
 ## Competitive position and limits
 
-ConsentX's proposed differentiator is purpose-aware downstream revocation orchestration with user-visible acknowledgement evidence. TC204's identity isolation and hash-chained audit are strengths to learn from, not gaps to claim. This roadmap does not claim competitors lack a feature unless independently verified. The pilot scenario is a proposed synthetic campus event workflow, not an institutional deployment or compliance certification.
+ConsentX's differentiator is purpose-aware downstream revocation orchestration with user-visible acknowledgement evidence and hash-chained audit verification. The pilot scenario is a proposed synthetic campus event workflow, not an institutional deployment or compliance certification.
 
 ## First execution checkpoint
 
-T-060–T-072 are now implemented and verified in `v2.0.0` (50 passing automated tests in `evidence/test-results.txt`). Only T-073 (clean-start recorded judge walkthrough) remains open.
+T-060–T-072 are now implemented and verified in `v2.0.0` (52 passing automated tests in `evidence/test-results.txt`). Only T-073 (clean-start recorded judge walkthrough) remains open.

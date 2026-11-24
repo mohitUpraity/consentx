@@ -5,12 +5,12 @@ Last reviewed: 2026-11-24. This page tracks ConsentX implementation and its own 
 ## Overall
 
 - Stage: v2.0.0 complete — field-scoped PEP, independent consumer adapters, revocation delivery/failure/retry, My Privacy & downloadable receipts, tamper-evident SHA-256 audit ledger, live browser diagnostics, dark mode, and Render deployment config implemented
-- Version: **2.0.0** (50 automated tests pass; T-060–T-072 implemented and verified)
+- Version: **2.0.0** (52 automated tests pass; T-060–T-072 implemented and verified)
 - Mandatory requirements complete: **7 / 11** (code complete; R-01/R-02/R-09 screenshot & recorded demo video and R-11 repo/PDF submission remain manual capture/submission steps)
 - PS-002 task baseline: **15 / 26** complete (remaining items are screenshot/video recording and R-11 submission)
 - v1.7/v2.0 roadmap: **13 / 14** complete (T-060–T-072 done; T-073 clean-start demo video recording remains)
-- Evidence items captured: **9 / 11** (`evidence/test-results.txt` 50 passed; clean-start screenshots/video and submission proof remain open)
-- Lifecycle tests passing: **50 / 12 required** (v2.0.0; concurrency, identity isolation, operator gate, revocation delivery/failure/retry/idempotency, My Privacy, receipts, and SHA-256 audit chain verified)
+- Evidence items captured: **9 / 11** (`evidence/test-results.txt` 52 passed; clean-start screenshots/video and submission proof remain open)
+- Lifecycle tests passing: **52 / 12 required** (v2.0.0; concurrency, identity isolation, operator gate, revocation delivery/failure/retry/idempotency, My Privacy, receipts, SHA-256 audit chain, self-guided judge UI, and demo reset verified)
 - Test procedures: lifecycle/filter checks, audit detail rendering, and full-history paging are browser verified; v1.5.0 dashboard, notice history, and decision trace are implemented and API-tested; current UI screenshot and recorded demo remain pending
 - Major PS-002 workstreams: tracked in the summary table at the top of `docs/TASKS.md`
 - Demo: lifecycle verified in isolated browser run and API evidence saved; screen recording and final rehearsal remain

@@ -599,6 +599,30 @@ class PS002LifecycleTests(unittest.TestCase):
         self.assertEqual(allowed.status_code, 201)
         self.assertEqual(allowed.get_json()["pending_action"]["status"], "QUEUED")
 
+    def test_51_demo_md_and_self_guided_judge_ui(self):
+        demo_md = (consentx.ROOT / "DEMO.md").read_text(encoding="utf-8")
+        for heading in ("PS-002 Requirements Checklist", "Why ConsentX Is More Than a Static Checkbox", "Technical Architecture", "Tough Judge Q&A"):
+            self.assertIn(heading, demo_md)
+        html = self.client.get("/").get_data(as_text=True)
+        for marker in ('id="judge-tour"', 'id="view-guide"', 'class="feature-guide"', 'id="sim-live-status"', 'id="tour-toggle"', 'id="tour-restart-btn"', 'id="tour-reset-btn"'):
+            self.assertIn(marker, html)
+
+    def test_52_demo_reset_restores_clean_v1_state(self):
+        self.consent("P1")
+        self.access("P1")
+        self.consent("P1", "withdraw")
+        self.publish_v2()
+        reset = self.client.post("/api/demo-reset", json={})
+        self.assertEqual(reset.status_code, 200)
+        self.assertTrue(reset.get_json()["reset"])
+        state = self.client.get("/api/state?user_id=student-001").get_json()
+        self.assertEqual(state["active_notice"]["version"], "1.0")
+        self.assertEqual(len(state["notice_history"]), 1)
+        self.assertEqual(state["consents"], {"P1": None, "P2": None, "P3": None})
+        self.assertEqual(state["ledger_integrity"]["total_count"], 0)
+        self.assertEqual(len(self.client.get("/api/revocations").get_json()["revocations"]), 0)
+        self.assertEqual(len(self.client.get("/api/pending-actions").get_json()["pending_actions"]), 6)
+
 
 if __name__ == "__main__":
     unittest.main()

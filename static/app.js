@@ -11,6 +11,21 @@ const state = {
   auditMode: "timeline",
   ledgerEvents: [],
   integrity: null,
+  consentRows: [],
+  accessRows: [],
+  revocations: [],
+  visitedPrivacy: false,
+  verifiedIntegrityManual: false,
+  diagnosticsRun: false,
+  selectedTourStep: 0,
+  tourBaseline: (() => {
+    try {
+      const raw = localStorage.getItem("consentx-tour-baseline");
+      return raw ? JSON.parse(raw) : null;
+    } catch (_) {
+      return null;
+    }
+  })(),
 };
 const consumerForPurpose = {
   P1: "notification-service",
@@ -65,7 +80,7 @@ async function api(path, body, methodOverride = null) {
 }
 
 function activateView(viewName) {
-  const known = ["dashboard", "consent", "simulator", "privacy", "notices", "audit"];
+  const known = ["dashboard", "consent", "simulator", "privacy", "notices", "audit", "guide"];
   const active = known.includes(viewName) ? viewName : "dashboard";
   document.querySelectorAll(".view").forEach((view) => view.classList.toggle("active", view.id === `view-${active}`));
   document.querySelectorAll(".nav-link").forEach((link) => {
@@ -81,8 +96,14 @@ function activateView(viewName) {
     privacy: "My Privacy",
     notices: "Notice versions",
     audit: "Audit & verification",
+    guide: "Judge Guide & Architecture",
   };
   $("#current-section").textContent = labels[active];
+  if (active === "privacy") {
+    state.visitedPrivacy = true;
+    renderJudgeTour();
+  }
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 function getCurrentState(purposeId) {
@@ -145,9 +166,26 @@ function renderPurposeCards() {
     .join("");
   if (state.purposes[selectedRequestPurpose]) $("#request-purpose").value = selectedRequestPurpose;
   renderRequestFields();
+  renderSimLiveStatus();
   $("#consent-notice-current").textContent = state.notice ? `Current notice v${state.notice.version}` : "";
   updateRequestPreview();
   updateDashboardMetrics();
+  renderJudgeTour();
+}
+
+function renderSimLiveStatus() {
+  const box = $("#sim-live-status");
+  if (!box) return;
+  const purposeId = $("#request-purpose").value || "P1";
+  const current = getCurrentState(purposeId);
+  const name = $("#user-select").selectedOptions[0]?.textContent || state.userId;
+  if (current.granted) {
+    box.className = "sim-live-status ok";
+    box.textContent = `Live policy state for ${name} · ${purposeId}: Granted under v${state.notice?.version} (allowed READ fields will ALLOW).`;
+  } else {
+    box.className = "sim-live-status blocked";
+    box.textContent = `Live policy state for ${name} · ${purposeId}: ${current.label} (requests will DENY with zero payload).`;
+  }
 }
 
 function renderConsumers() {
@@ -444,8 +482,11 @@ async function refreshAudit() {
       : '<p class="empty-state">No events yet. Grant consent or send a mock request to begin.</p>';
   }
 
-  $("#audit-consent-count").textContent = String(allRows.filter((row) => row.record_type === "consent").length);
-  updateDashboardMetrics(allRows.filter((row) => row.record_type === "access"));
+  state.consentRows = allRows.filter((row) => row.record_type === "consent");
+  $("#audit-consent-count").textContent = String(state.consentRows.length);
+  state.accessRows = allRows.filter((row) => row.record_type === "access");
+  updateDashboardMetrics(state.accessRows);
+  renderJudgeTour();
 }
 
 async function refreshRevocations() {
@@ -454,6 +495,7 @@ async function refreshRevocations() {
     api(`/api/pending-actions?user_id=${encodeURIComponent(state.userId)}`),
   ]);
   const rows = data.revocations || [];
+  state.revocations = rows;
   $("#revocation-list").innerHTML = rows.length
     ? rows
         .map((row) => {
@@ -568,6 +610,128 @@ async function refreshMyPrivacy() {
     : '<p class="empty-state">No withdrawals recorded for this identity yet.</p>';
 
   $("#privacy-disclaimer").textContent = data.disclaimer;
+  renderJudgeTour();
+}
+
+const TOUR_STEPS = [
+  {
+    short: "1. Grant P1",
+    title: "Step 1: Grant P1 (Event reminders) only",
+    why: "Proves PS-002 purpose isolation: saying yes to P1 never unlocks P2 or P3.",
+    how: "Open Consent & revocation and click Grant consent on P1.",
+    view: "consent",
+    done: () => {
+      if (state.tourBaseline) {
+        return state.consentRows.filter((r) => r.result === "grant").length > state.tourBaseline.grants;
+      }
+      return Object.keys(state.purposes).some((pid) => getCurrentState(pid).granted) || state.accessRows.some((r) => r.result === "ALLOW");
+    },
+  },
+  {
+    short: "2. PEP + Attack",
+    title: "Step 2: Test Allowed READ & Field Overreach Attack",
+    why: "Shows ConsentX's field-level edge: checks consumer, READ/WRITE, and individual fields.",
+    how: "In Simulator, run Valid P1 read (ALLOW) then Field overreach student_email (DENY).",
+    view: "simulator",
+    done: () => {
+      const allows = state.accessRows.filter((r) => r.result === "ALLOW").length;
+      const denies = state.accessRows.filter((r) => r.result === "DENY").length;
+      if (state.tourBaseline) {
+        return allows > state.tourBaseline.allows && denies > state.tourBaseline.denies;
+      }
+      return allows > 0 && denies > 0;
+    },
+  },
+  {
+    short: "3. Withdraw",
+    title: "Step 3: Withdraw P1 & Cancel Queued Work",
+    why: "Proves withdrawal isn't just a checkbox—it cancels queued P1 jobs while leaving P2/P3 alone.",
+    how: "Click Withdraw consent on P1 and watch 2 P1 reminder jobs turn CANCELLED.",
+    view: "consent",
+    done: () => state.tourBaseline
+      ? state.revocations.length > state.tourBaseline.revocations
+      : state.revocations.length > 0,
+  },
+  {
+    short: "4. Outage/Ack",
+    title: "Step 4: Simulate Outage → Fail → Retry → Acknowledge",
+    why: "Proves ConsentX never fakes success when a downstream service is down.",
+    how: "Toggle notification-service offline, Deliver (FAILED), restore online, and Retry (ACKNOWLEDGED).",
+    view: "consent",
+    done: () => {
+      const acks = state.revocations.filter((r) => r.status === "ACKNOWLEDGED").length;
+      return state.tourBaseline ? acks > state.tourBaseline.acks : acks > 0;
+    },
+  },
+  {
+    short: "5. My Privacy",
+    title: "Step 5: Inspect My Privacy & Printable Receipt",
+    why: "Gives the student clear visibility and downloadable withdrawal evidence.",
+    how: "Open My Privacy and inspect Connected Services & Printable receipt.",
+    view: "privacy",
+    done: () => state.tourBaseline
+      ? state.visitedPrivacy
+      : state.visitedPrivacy && state.revocations.length > 0,
+  },
+  {
+    short: "6. Notice v2",
+    title: "Step 6: Publish Notice v2.0 (Operator Boundary)",
+    why: "Proves policy changes invalidate older grants until re-confirmed under the new SHA-256.",
+    how: "Open Notice versions, unlock operator mode (demo-operator-secret locally), edit text, and publish.",
+    view: "notices",
+    done: () => state.tourBaseline
+      ? (state.noticeHistory || []).length > state.tourBaseline.notices
+      : (state.noticeHistory || []).length > 1,
+  },
+  {
+    short: "7. SHA-256",
+    title: "Step 7: Verify SHA-256 Ledger & Live Diagnostics",
+    why: "Proves all 12 event types are tamper-evidently chained and live checks pass.",
+    how: "Open Audit & verification and click Verify audit integrity + Run live diagnostics.",
+    view: "audit",
+    done: () => state.verifiedIntegrityManual || state.diagnosticsRun,
+  },
+];
+
+function setTourOpen(open) {
+  const panel = $("#judge-tour");
+  if (!panel) return;
+  panel.hidden = !open;
+  localStorage.setItem("consentx-tour-open", open ? "true" : "false");
+}
+
+function renderJudgeTour() {
+  const grid = $("#tour-steps-grid");
+  if (!grid) return;
+  const doneCount = TOUR_STEPS.filter((step) => step.done()).length;
+  const pill = $("#tour-progress-pill");
+  if (pill) pill.textContent = `${doneCount}/${TOUR_STEPS.length}`;
+
+  const firstIncomplete = TOUR_STEPS.findIndex((step) => !step.done());
+  if (state.selectedTourStep < 0 || state.selectedTourStep >= TOUR_STEPS.length) {
+    state.selectedTourStep = firstIncomplete >= 0 ? firstIncomplete : 0;
+  }
+
+  grid.innerHTML = TOUR_STEPS.map((step, idx) => {
+    const isDone = step.done();
+    const isCurrent = idx === state.selectedTourStep;
+    return `<button type="button" class="tour-step-chip ${isDone ? "done" : ""} ${isCurrent ? "current" : ""}" data-tour-idx="${idx}">
+      <small>${isDone ? "✓ Done" : "Pending"}</small>
+      <span>${esc(step.short)}</span>
+    </button>`;
+  }).join("");
+
+  const active = TOUR_STEPS[state.selectedTourStep];
+  $("#tour-active-title").textContent = active.title;
+  $("#tour-active-why").textContent = `Why it matters: ${active.why}`;
+  $("#tour-active-how").textContent = `Action: ${active.how}`;
+  $("#tour-jump-btn").dataset.jumpView = active.view;
+}
+
+if (localStorage.getItem("consentx-tour-open") === "false") {
+  setTourOpen(false);
+} else {
+  setTourOpen(true);
 }
 
 function updateOperatorControls() {
@@ -633,7 +797,7 @@ $("#operator-enable")?.addEventListener("click", async () => {
   }
 });
 
-$("#request-purpose").addEventListener("change", () => { renderRequestFields(); clearDecisionTrace(); });
+$("#request-purpose").addEventListener("change", () => { renderRequestFields(); renderSimLiveStatus(); clearDecisionTrace(); });
 $("#request-consumer").addEventListener("change", updateRequestPreview);
 $("#request-operation").addEventListener("change", updateRequestPreview);
 $("#request-fields").addEventListener("change", updateRequestPreview);
@@ -825,7 +989,9 @@ $("#publish-notice").addEventListener("click", async () => {
 $("#verify-integrity-btn")?.addEventListener("click", async () => {
   try {
     const { data } = await api("/api/audit/verify");
+    state.verifiedIntegrityManual = true;
     renderIntegrity(data);
+    renderJudgeTour();
     showToast(data.message, data.status === "intact" ? "ok" : "error");
   } catch (error) {
     showError(error);
@@ -835,6 +1001,8 @@ $("#verify-integrity-btn")?.addEventListener("click", async () => {
 $("#run-diagnostics-btn")?.addEventListener("click", async () => {
   try {
     const { data } = await api("/api/diagnostics");
+    state.diagnosticsRun = true;
+    renderJudgeTour();
     const rowsHtml = data.checks
       .map(
         (c) => `<tr>
@@ -866,6 +1034,83 @@ function showError(error) {
   const result = $("#request-result");
   if (result && $("#view-simulator").classList.contains("active")) result.textContent = msg;
 }
+
+$("#tour-toggle")?.addEventListener("click", () => {
+  const panel = $("#judge-tour");
+  if (panel) setTourOpen(panel.hidden);
+});
+$("#tour-hide-btn")?.addEventListener("click", () => setTourOpen(false));
+$("#tour-steps-grid")?.addEventListener("click", (event) => {
+  const chip = event.target.closest("button[data-tour-idx]");
+  if (!chip) return;
+  state.selectedTourStep = Number(chip.dataset.tourIdx) || 0;
+  renderJudgeTour();
+});
+$("#tour-next-btn")?.addEventListener("click", () => {
+  const nextIdx = TOUR_STEPS.findIndex((step) => !step.done());
+  state.selectedTourStep = nextIdx >= 0 ? nextIdx : 0;
+  renderJudgeTour();
+  const targetView = TOUR_STEPS[state.selectedTourStep].view;
+  location.hash = targetView;
+  activateView(targetView);
+});
+$("#tour-restart-btn")?.addEventListener("click", () => {
+  state.tourBaseline = {
+    grants: state.consentRows.filter((r) => r.result === "grant").length,
+    allows: state.accessRows.filter((r) => r.result === "ALLOW").length,
+    denies: state.accessRows.filter((r) => r.result === "DENY").length,
+    revocations: state.revocations.length,
+    acks: state.revocations.filter((r) => r.status === "ACKNOWLEDGED").length,
+    notices: (state.noticeHistory || []).length,
+  };
+  localStorage.setItem("consentx-tour-baseline", JSON.stringify(state.tourBaseline));
+  state.visitedPrivacy = false;
+  state.verifiedIntegrityManual = false;
+  state.diagnosticsRun = false;
+  state.selectedTourStep = 0;
+  clearDecisionTrace();
+  renderJudgeTour();
+  location.hash = "consent";
+  activateView("consent");
+  showToast("Tour restarted from 0/7 (existing database records preserved)");
+});
+$("#tour-reset-btn")?.addEventListener("click", async () => {
+  if (!window.confirm("Wipe all synthetic demo data and restore Notice v1.0? (Use 'Restart tour' instead if you want to keep your data.)")) return;
+  const btn = $("#tour-reset-btn");
+  btn.disabled = true;
+  try {
+    await api("/api/demo-reset", {});
+    state.tourBaseline = null;
+    localStorage.removeItem("consentx-tour-baseline");
+    state.visitedPrivacy = false;
+    state.verifiedIntegrityManual = false;
+    state.diagnosticsRun = false;
+    state.selectedTourStep = 0;
+    noticeEditorDirty = false;
+    $("#user-select").value = "student-001";
+    $("#withdrawal-feedback").textContent = "";
+    $("#notice-publish-result").textContent = "The server calculates and stores the SHA-256 digest.";
+    $("#diagnostics-results").innerHTML = '<p class="empty-state">Click <strong>Run live diagnostics</strong> to verify live backend guarantees.</p>';
+    clearDecisionTrace();
+    await refresh();
+    location.hash = "dashboard";
+    activateView("dashboard");
+    showToast("All demo data reset to clean Notice v1.0 baseline (0/7)");
+  } catch (error) {
+    showError(error);
+  } finally {
+    btn.disabled = false;
+  }
+});
+document.addEventListener("click", (event) => {
+  const jump = event.target.closest("[data-jump-view]");
+  if (!jump) return;
+  const target = jump.dataset.jumpView;
+  if (target) {
+    location.hash = target;
+    activateView(target);
+  }
+});
 
 $("#notice-text").value = "";
 refresh().catch(showError);

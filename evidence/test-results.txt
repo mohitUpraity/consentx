@@ -1,4 +1,4 @@
-ConsentX v2.0.0 verification — 2026-11-24T18:48:45Z
+ConsentX v2.0.0 verification — 2026-11-24T19:40:46Z
 Python 3.13.9
 Command: .venv/bin/python -m unittest discover -s tests -v
 
@@ -52,8 +52,10 @@ test_47_duplicate_delivery_and_retry_are_idempotent (test_ps002.PS002LifecycleTe
 test_48_my_privacy_returns_permissions_services_and_unresolved (test_ps002.PS002LifecycleTests.test_48_my_privacy_returns_permissions_services_and_unresolved) ... ok
 test_49_privacy_receipt_json_html_and_isolation (test_ps002.PS002LifecycleTests.test_49_privacy_receipt_json_html_and_isolation) ... ok
 test_50_diagnostics_and_simulate_pending_work_guard (test_ps002.PS002LifecycleTests.test_50_diagnostics_and_simulate_pending_work_guard) ... ok
+test_51_demo_md_and_self_guided_judge_ui (test_ps002.PS002LifecycleTests.test_51_demo_md_and_self_guided_judge_ui) ... ok
+test_52_demo_reset_restores_clean_v1_state (test_ps002.PS002LifecycleTests.test_52_demo_reset_restores_clean_v1_state) ... ok
 
 ----------------------------------------------------------------------
-Ran 50 tests in 1.418s
+Ran 52 tests in 1.252s
 
 OK
