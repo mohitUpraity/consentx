@@ -1,6 +1,6 @@
 # Feature Test Plan
 
-This plan turns each PS-002 requirement into reproducible checks. It is **not** itself a test result. The 24-case automated suite passed on 2026-11-24; see `evidence/test-results.txt`. The main lifecycle and audit filters have also been exercised in the browser on an isolated database; saved screenshots/video and a few remaining UI checks are pending. See [WALKTHROUGH.md](WALKTHROUGH.md) for plain-language explanations and presenter notes.
+This plan turns each PS-002 requirement into reproducible checks. It is **not** itself a test result. The 24-case automated suite passed for v1.3.0; see `evidence/test-results.txt` for the exact run and [WALKTHROUGH.md](WALKTHROUGH.md) for plain-language explanations and presenter notes.
 
 ## What PS-002 failure each feature addresses
 
@@ -109,8 +109,11 @@ For click-by-click steps and what to say while demonstrating each feature, use [
 | M-03 | Refresh browser after grant/withdraw. | UI reloads state from database and shows the latest event, not a client-only toggle. |
 | M-04 | Use JSON and CSV export links after M-01. | Both contain the same consent/access sequence and notice references. |
 | M-05 | Filter audit by user, purpose and ALLOW/DENY; export each filtered view as JSON and CSV. | Displayed rows and both exports match the selected filters; invalid filter values return a clear 4xx response. |
+| M-06 | Generate grant, allow, deny, withdrawal and notice-publication events. Inspect each timeline row and its user, purpose, action/decision, reason/details, notice version/hash, timestamp and event ID. | Each field is readable and corresponds to the matching row in the JSON/CSV export. System events identify themselves as system events; access denials show the reason and never imply a payload was returned. |
 
 M-01 lifecycle was exercised on 2026-11-24 and its API/audit outputs are saved in `evidence/`; a screenshot/video is still needed. M-02 P1 authorization isolation from P2 and P3 was exercised; see `evidence/manual-p3-deny.json`. M-03 persistence after refresh was observed. M-05 user/purpose/decision filters were exercised and filtered JSON/CSV responses were saved; screenshot remains. For M-04, clicking the export links in connected Chrome was blocked with `ERR_BLOCKED_BY_CLIENT`; the live endpoints were fetched directly and both returned HTTP 200 with matching row counts (`evidence/live-export-ui-check.*`). Repeat the click in the user's regular browser if download behavior needs separate confirmation. Use synthetic evidence only; never put real personal data or secrets in captures.
+
+**v1.3.0 M-06 verification (2026-11-24):** Live browser at `http://localhost:5001/` rendered timeline rows with event type, synthetic user, purpose, action/decision, reason/details, notice version/hash, timestamp, and event ID. Observed an access denial (`CONSENT_WITHDRAWN`) and consent grant/withdrawal entries. See `evidence/v1.3-audit-timeline-check.md`; a saved screenshot remains pending.
 
 ## Pseudocode/manual API review
 

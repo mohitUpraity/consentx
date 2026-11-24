@@ -44,7 +44,29 @@ async function refreshAudit() {
   const rows = data.slice(-12).reverse();
   const auditList = $("#audit-list");
   if (auditList) {
-    auditList.innerHTML = rows.length ? rows.map(r => `<div class="audit-row"><span>${esc(r.record_type)} · ${esc(r.purpose_id)}</span><span class="decision ${r.result === "ALLOW" ? "ALLOW" : r.result === "DENY" ? "DENY" : ""}">${esc(r.result)}${r.record_type === "access" ? ` · ${esc(r.reason_code)}` : ""}</span><time>${esc(r.created_at)}</time></div>`).join("") : `<p class="muted">No events yet. Grant consent or send a mock request to begin.</p>`;
+    auditList.innerHTML = rows.length ? rows.map(r => {
+      const userOption = Array.from($("#user-select").options).find(option => option.value === r.user_id);
+      const userName = userOption?.textContent || r.user_id || "Unknown";
+      const purpose = state.purposes[r.purpose_id];
+      const purposeName = purpose ? `${r.purpose_id} · ${purpose.name}` : (r.purpose_id === "SYSTEM" ? "System event" : r.purpose_id);
+      const eventName = r.record_type === "access" ? "Data request" : r.record_type === "consent" ? "Consent choice" : "System event";
+      const eventLabel = r.record_type === "access" ? "Decision" : r.record_type === "consent" ? "Action" : "Event";
+      const detailLabel = r.record_type === "access" ? "Reason" : r.record_type === "system" ? "Details" : "Record";
+      const detailValue = r.record_type === "access" ? r.reason_code : r.record_type === "system" ? r.reason_code : r.record_id;
+      const decisionClass = r.result === "ALLOW" || r.result === "DENY" ? `decision ${r.result}` : "audit-value";
+      const noticeVersion = r.notice_version ? `Version ${r.notice_version}` : "No notice reference";
+      const noticeHash = r.notice_hash || "—";
+      return `<article class="audit-row">
+        <div class="audit-row-heading"><div><span class="audit-kind">${esc(eventName)}</span><strong>${esc(userName)}</strong></div><time datetime="${esc(r.created_at)}">${esc(r.created_at)}</time></div>
+        <dl class="audit-details">
+          <div><dt>Purpose</dt><dd>${esc(purposeName)}</dd></div>
+          <div><dt>${eventLabel}</dt><dd class="${decisionClass}">${esc(r.result)}</dd></div>
+          <div><dt>${detailLabel}</dt><dd>${esc(detailValue || "—")}</dd></div>
+          <div><dt>Notice</dt><dd>${esc(noticeVersion)}<code title="Full SHA-256 hash">${esc(noticeHash)}</code></dd></div>
+        </dl>
+        <div class="audit-record-id">Event ID · <code>${esc(r.record_id)}</code></div>
+      </article>`;
+    }).join("") : `<p class="muted">No events yet. Grant consent or send a mock request to begin.</p>`;
   }
 }
 

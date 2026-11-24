@@ -24,7 +24,7 @@ The user's screenshot shows ConsentX rendered at `localhost:5001` with styling l
 
 ## Version baseline
 
-ConsentX `1.2.0` is the current local demo baseline. It includes purpose consent, withdrawal enforcement, notice versioning, audit exports, and audit filters. The version label does not mean all PS-002 requirements have passed; the test and evidence counts in `PROGRESS.md` remain authoritative.
+ConsentX `1.3.0` is the current local demo baseline. It includes purpose consent, withdrawal enforcement, notice versioning, audit exports, audit filters, and readable audit evidence rows. The version label does not mean all PS-002 requirements have passed; the test and evidence counts in `PROGRESS.md` remain authoritative.
 
 ## Demo script
 

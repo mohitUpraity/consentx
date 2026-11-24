@@ -1,6 +1,6 @@
 # ConsentX Personal Walkthrough and Demo Guide
 
-This is the hands-on guide for understanding, checking, and presenting every ConsentX feature. It describes the current **v1.2.0** build. The main lifecycle and audit-filter interactions have been walked through in the browser; screenshots and a recording are still needed as saved demo evidence.
+This is the hands-on guide for understanding, checking, and presenting every ConsentX feature. It describes the current **v1.3.0** build. Lifecycle and audit-filter interactions have been walked through in the browser; v1.3.0 detailed timeline fields are verified, while a saved screenshot and recorded demo remain pending.
 
 ## How to use this guide
 
@@ -190,6 +190,28 @@ curl -s "$BASE_URL/api/audit?format=csv&user_id=student-001&purpose_id=P1&decisi
 Expected: only matching rows. Try an invalid purpose such as `purpose_id=P9`; expect HTTP 400 with `INVALID_PURPOSE`.
 
 **Verification status:** API filter behavior and filtered JSON/CSV consistency are covered by the 24 passing automated tests. Browser filtering by user, purpose, and decision was exercised on 2026-11-24 against an isolated DB. The matching filtered JSON/CSV responses are saved under `evidence/`; a screenshot and clicking the UI download links remain pending.
+
+## Feature 7 — Readable audit evidence (v1.3)
+
+**PS-002 coverage:** R-07, R-09.
+
+**What it means:** An audit row can now be read as a self-contained explanation: who the synthetic event belongs to, what purpose it concerns, what action or decision occurred, why it was allowed/denied (or what system event happened), which notice version/hash applied, when it happened, and its event ID.
+
+**Try it:**
+
+1. Start with a clean database using the setup steps above.
+2. Grant P1 and send a P1 request (allow).
+3. Request P2 without granting it (deny).
+4. Withdraw P1, then request P1 again (withdrawal deny).
+5. Publish notice v2 once and inspect the system row.
+6. Filter the audit trail by user, purpose, and decision.
+7. Compare one visible row with its JSON/CSV export.
+
+**What you should see:** Each row labels the event type and shows user, purpose, action/decision, reason/details, notice version/hash, timestamp, and event ID. For `NOTICE_PUBLISHED`, the actor is shown as System. For a DENY, reason is visible and there is no payload claim. Filters continue to constrain the shown events and export links.
+
+**Say in the demo:** “Each timeline row explains who did what, for which purpose, under which notice, and the reason for the decision. The event ID lets us match the screen back to the export.”
+
+**Verification status:** Verified in v1.3.0. All 24 automated tests pass. The live browser displayed all listed row fields, including an access denial and consent events. A saved screenshot remains pending; see `evidence/v1.3-audit-timeline-check.md`.
 
 ## Suggested 3-minute PS-002 demo
 

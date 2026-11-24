@@ -1,4 +1,5 @@
 ConsentX PS-002 verification
+Application version: 1.3.0
 Date: 2026-11-24
 Command: .venv/bin/python -m unittest discover -s tests -v
 Python 3.13.9
@@ -28,6 +29,6 @@ test_23_invalid_audit_filters_return_400 (test_ps002.PS002LifecycleTests.test_23
 test_24_filtered_csv_matches_filtered_json (test_ps002.PS002LifecycleTests.test_24_filtered_csv_matches_filtered_json) ... ok
 
 ----------------------------------------------------------------------
-Ran 24 tests in 0.514s
+Ran 24 tests in 0.723s
 
 OK

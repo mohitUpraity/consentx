@@ -19,3 +19,9 @@
 - JSON and CSV export links preserve the selected filters.
 - Made audit-filter event binding null-safe when an older cached page omits those optional controls; restarted the local server to load the current matching template.
 - Status: 24 automated tests pass, including API filter and filtered-export cases. Browser lifecycle and filter interactions were exercised on an isolated database; recording and remaining screenshot/export-link proof are pending. See [the v1.2 walkthrough](WALKTHROUGH.md#feature-6--filter-audit-records-v12).
+
+## 1.3.0 — Readable audit evidence
+
+- Expanded audit timeline rows to show event kind, synthetic user, purpose, action/decision, reason/details, notice version/hash, timestamp, and event ID.
+- Kept existing filter and export behavior; each visible row can now be matched to its exported record.
+- Status: verified; all 24 automated tests pass and browser confirms the expanded timeline fields. Saved screenshot and recorded demo remain pending. See `evidence/v1.3-audit-timeline-check.md`.

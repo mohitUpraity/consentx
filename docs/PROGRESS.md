@@ -4,13 +4,13 @@ Last reviewed: 2026-11-24. This page tracks ConsentX implementation and its own 
 
 ## Overall
 
-- Stage: v1.2.0 lifecycle and audit-filter browser walkthrough completed; JS/template startup mismatch fixed; screenshot/video evidence pending
-- Version: **1.2.0** (audit filters; browser lifecycle checkpoint exercised)
+- Stage: v1.3.0 audit detail timeline implemented and verified; next major PS-002 workstream remains in progress
+- Version: **1.3.0** (24 automated tests pass; timeline fields confirmed in browser)
 - Mandatory requirements complete: **7 / 11**
-- Tasks complete: **10 / 24** (11 in progress)
+- Tasks complete: **11 / 25** (11 in progress)
 - Evidence items captured: **8 / 11** (R-02 has API/browser evidence but still needs a saved UI screenshot; recorded demo and submission proof remain open)
-- Lifecycle tests passing: **24 / 12 required**
-- Test procedures: 24 automated cases passed; lifecycle and audit filters exercised in the browser; the null-listener fix was verified after restarting the server with the current template; screen recording remains open
+- Lifecycle tests passing: **24 / 12 required** (full suite rerun for v1.3.0)
+- Test procedures: v1.2.0 lifecycle/filter browser checks passed; v1.3.0 audit detail rendering confirmed in browser; screenshot capture remains pending
 - Major PS-002 workstreams: tracked in the summary table at the top of `docs/TASKS.md`
 - Demo: lifecycle verified in isolated browser run and API evidence saved; screen recording and final rehearsal remain
 
