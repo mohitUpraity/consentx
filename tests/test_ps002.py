@@ -63,6 +63,12 @@ class PS002LifecycleTests(unittest.TestCase):
         return self.client.get("/api/audit?format=json").get_json()
 
     def test_01_health_and_version(self):
+        healthz = self.client.get("/healthz")
+        self.assertEqual(healthz.status_code, 200)
+        self.assertEqual(healthz.get_json(), {"status": "ok"})
+        healthz_head = self.client.head("/healthz")
+        self.assertEqual(healthz_head.status_code, 200)
+
         response = self.client.get("/api/health")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.get_json()["status"], "ok")

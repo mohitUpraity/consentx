@@ -382,6 +382,13 @@ def operator_session():
     return jsonify({"role": "operator", "mode": "synthetic-demo-operator"})
 
 
+@app.route("/healthz", methods=["GET", "HEAD"])
+def healthz():
+    with db_session() as con:
+        con.execute("SELECT 1")
+    return jsonify({"status": "ok"})
+
+
 @app.get("/api/health")
 def health():
     with db_session() as con:
