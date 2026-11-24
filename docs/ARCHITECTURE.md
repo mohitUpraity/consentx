@@ -35,8 +35,9 @@ flowchart LR
 
 Persist the event history; do not overwrite the only consent record with a mutable boolean. Decide the final database/framework in T-003 before implementation.
 
-## Architecture choices to confirm
+## Current technology choice
 
-- Prefer a small local stack that can be launched reliably during judging. The stack choice is provisional until T-003 is completed.
+ConsentX currently uses Flask, SQLite, Jinja templates, browser JavaScript and CSS. The reasons and alternatives are documented in [`TECH_STACK.md`](TECH_STACK.md). The choice is suitable for the local prototype, but clean setup and behavior still need verification under T-003.
+
 - Keep the mock consumer and policy check in the same demo system initially; clearly label the policy boundary so a later separate consumer can call the API.
 - No real third-party network calls or real personal data.

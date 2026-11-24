@@ -22,6 +22,10 @@ This file is the evidence index. Evidence must come from the current ConsentX bu
 
 The user's screenshot shows ConsentX rendered at `localhost:5001` with styling loaded, notice v1.0 and its SHA-256 visible, a demo-account selector, three purpose cards and the mock-consumer/audit sections. This confirms the page is being served through the app rather than opened as a raw template. It does **not** prove button interactions, API decisions, persistence, export contents or the full demo sequence. The screenshot remains in the conversation and has not been copied into the project evidence folder.
 
+## Version baseline
+
+ConsentX `1.0.0` is the first local demo baseline. It includes the initial UI/API slice and the rejection-audit code update. The version label does not mean all PS-002 requirements have passed; the test and evidence counts in `PROGRESS.md` remain authoritative.
+
 ## Demo script
 
 1. Start from clean synthetic account and notice v1.

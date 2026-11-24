@@ -5,6 +5,7 @@ Last reviewed: 2026-11-24. This page tracks ConsentX implementation and its own 
 ## Overall
 
 - Stage: First local UI/API slice; interaction verification pending
+- Version: **1.0.0 baseline** (initial demo slice, not PS-002 completion)
 - Mandatory requirements complete: **0 / 11**
 - Tasks complete: **3 / 23** (12 in progress)
 - Evidence items captured: **0 / 11**

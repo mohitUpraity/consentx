@@ -53,7 +53,7 @@ This is the top-level view of the challenge deliverables. The detailed tasks bel
 - [ ] T-043 Write pseudocode that mirrors the final enforcement code (R-10). Proof: `DEMO_PSEUDOCODE.md` reviewed against implementation.
 - [ ] T-044 Rehearse and record a clean-start demo; verify exported audit trail matches the screen flow (R-09). Proof: demo artifact and evidence checklist.
 - [ ] T-045 Complete private repository, collaboration, PDF and mentor-demo submission checklist (R-11). Proof: checklist in evidence index.
-- [ ] T-046 Log every rejected access decision, including unknown user/purpose requests, so audit behavior matches R-07. Proof: rejection audit tests and exported records.
+- [/] T-046 Log every rejected access decision, including unknown user/purpose requests, so audit behavior matches R-07. Code now records these rejections; proof still needs tests and exported records.
 - [x] T-047 Write feature-by-feature verification procedures and expected results. Proof: `docs/TEST_PLAN.md` (this documents the plan; it does not mean tests have passed).
 
 ## Suggested order

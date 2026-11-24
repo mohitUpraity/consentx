@@ -17,6 +17,7 @@ from flask import Flask, Response, jsonify, render_template, request
 ROOT = Path(__file__).resolve().parent
 INSTANCE = ROOT / "instance"
 DB_PATH = Path(os.environ.get("CONSENTX_DB", INSTANCE / "consentx.sqlite3"))
+APP_VERSION = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
 app = Flask(__name__)
 
 PURPOSES = {
@@ -109,14 +110,14 @@ def audit_decision(con, user_id, purpose_id, decision, reason, notice):
 
 @app.get("/")
 def home():
-    return render_template("index.html", purposes=PURPOSES, users=DEMO_USERS)
+    return render_template("index.html", purposes=PURPOSES, users=DEMO_USERS, app_version=APP_VERSION)
 
 
 @app.get("/api/health")
 def health():
     with get_db() as con:
         con.execute("SELECT 1")
-    return jsonify({"status": "ok", "service": "ConsentX synthetic demo"})
+    return jsonify({"status": "ok", "service": "ConsentX synthetic demo", "version": APP_VERSION})
 
 
 @app.get("/api/state")
@@ -164,8 +165,16 @@ def data_access():
     data = request.get_json(silent=True) or {}
     user_id, purpose_id = data.get("user_id"), data.get("purpose_id")
     if user_id not in DEMO_USERS:
+        with get_db() as con:
+            notice = active_notice(con)
+            audit_decision(con, str(user_id or "unknown"), str(purpose_id or "unknown"),
+                           "DENY", "UNKNOWN_USER", notice)
         return jsonify({"decision": "DENY", "reason_code": "UNKNOWN_USER", "payload": None}), 403
     if purpose_id not in PURPOSES:
+        with get_db() as con:
+            notice = active_notice(con)
+            audit_decision(con, user_id, str(purpose_id or "unknown"),
+                           "DENY", "INVALID_PURPOSE", notice)
         return jsonify({"decision": "DENY", "reason_code": "INVALID_PURPOSE", "payload": None}), 400
     with get_db() as con:
         notice = active_notice(con)

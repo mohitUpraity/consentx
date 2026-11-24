@@ -80,15 +80,15 @@ Create at least these 18 independent automated cases. Tests should call the Flas
 | T-09 Withdrawal is scoped | Grant P1 and P2; withdraw P1; request both | P1 denied; P2 remains allowed. |
 | T-10 Notice change invalidates stale consent | Grant P1 under v1; publish v2; request P1 | 403 `NOTICE_MISMATCH`, payload null; old consent event remains unchanged. |
 | T-11 Re-consent restores access | After T-10, grant P1 again and request | New event references v2/hash; request 200 `ACTIVE_CONSENT`. |
-| T-12 Unknown purpose fails closed | Request purpose `P9` | 400 `INVALID_PURPOSE`; no data payload. Also verify the attempt is audited (currently tracked by T-046). |
-| T-13 Unknown user fails closed | Request `unknown-user` for P1 | 403 `UNKNOWN_USER`; no payload. Also verify the attempt is audited (currently tracked by T-046). |
+| T-12 Unknown purpose fails closed | Request purpose `P9` | 400 `INVALID_PURPOSE`; no data payload; an `INVALID_PURPOSE` DENY audit row exists. Verify code with T-046. |
+| T-13 Unknown user fails closed | Request `unknown-user` for P1 | 403 `UNKNOWN_USER`; no payload; an `UNKNOWN_USER` DENY audit row exists. Verify code with T-046. |
 | T-14 Audit records lifecycle | Grant, allow, withdraw, deny P1 | Audit has corresponding consent and access rows with user, purpose, result/reason, timestamp and notice reference. |
 | T-15 JSON export shape | `GET /api/audit?format=json` after T-14 | 200 JSON array; required event fields exist; rows match the actions just performed. |
 | T-16 Notice hash is reproducible | Read active notice; independently SHA-256 its exact UTF-8 text | Recomputed digest equals `sha256` returned by state/consent API. |
 | T-17 CSV export shape | `GET /api/audit?format=csv` after T-14 | 200 `text/csv`; header and row count match JSON export. |
 | T-18 Input validation | Try invalid action, missing version/text for notice, and malformed JSON | 4xx response; no consent grant or payload is created. Record each exact observed result. |
 
-**Known implementation check:** T-12/T-13 are expected requirements, but the current access handler returns before writing an audit event for unknown purposes/users. T-046 tracks this gap; do not claim R-07 complete until it is fixed and the tests pass.
+**Verification note:** T-046 now writes audit rows for unknown users and purposes. Keep R-07 in progress until automated checks confirm both rejection rows appear in JSON/CSV exports.
 
 ## Manual UI checks
 
