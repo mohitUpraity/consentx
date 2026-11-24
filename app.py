@@ -9,6 +9,7 @@ import json
 import os
 import sqlite3
 import uuid
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -56,9 +57,22 @@ def get_db() -> sqlite3.Connection:
     return con
 
 
+@contextmanager
+def db_session():
+    con = get_db()
+    try:
+        yield con
+        con.commit()
+    except Exception:
+        con.rollback()
+        raise
+    finally:
+        con.close()
+
+
 def init_db() -> None:
     digest = hashlib.sha256(DEFAULT_NOTICE.encode("utf-8")).hexdigest()
-    with get_db() as con:
+    with db_session() as con:
         con.executescript(
             """
             CREATE TABLE IF NOT EXISTS notices (
@@ -82,6 +96,15 @@ def init_db() -> None:
                 purpose_id TEXT NOT NULL,
                 decision TEXT NOT NULL CHECK(decision IN ('ALLOW','DENY')),
                 reason_code TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                notice_version TEXT,
+                notice_hash TEXT
+            );
+            CREATE TABLE IF NOT EXISTS system_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                event_id TEXT NOT NULL UNIQUE,
+                event_type TEXT NOT NULL,
+                details TEXT NOT NULL,
                 created_at TEXT NOT NULL,
                 notice_version TEXT,
                 notice_hash TEXT
@@ -115,7 +138,7 @@ def home():
 
 @app.get("/api/health")
 def health():
-    with get_db() as con:
+    with db_session() as con:
         con.execute("SELECT 1")
     return jsonify({"status": "ok", "service": "ConsentX synthetic demo", "version": APP_VERSION})
 
@@ -125,7 +148,7 @@ def state():
     user_id = request.args.get("user_id", "student-001")
     if user_id not in DEMO_USERS:
         return jsonify({"error": "Unknown synthetic user", "reason_code": "UNKNOWN_USER"}), 400
-    with get_db() as con:
+    with db_session() as con:
         notice = active_notice(con)
         statuses = {}
         for purpose_id in PURPOSES:
@@ -165,18 +188,18 @@ def data_access():
     data = request.get_json(silent=True) or {}
     user_id, purpose_id = data.get("user_id"), data.get("purpose_id")
     if user_id not in DEMO_USERS:
-        with get_db() as con:
+        with db_session() as con:
             notice = active_notice(con)
             audit_decision(con, str(user_id or "unknown"), str(purpose_id or "unknown"),
                            "DENY", "UNKNOWN_USER", notice)
         return jsonify({"decision": "DENY", "reason_code": "UNKNOWN_USER", "payload": None}), 403
     if purpose_id not in PURPOSES:
-        with get_db() as con:
+        with db_session() as con:
             notice = active_notice(con)
             audit_decision(con, user_id, str(purpose_id or "unknown"),
                            "DENY", "INVALID_PURPOSE", notice)
         return jsonify({"decision": "DENY", "reason_code": "INVALID_PURPOSE", "payload": None}), 400
-    with get_db() as con:
+    with db_session() as con:
         notice = active_notice(con)
         event = con.execute(
             "SELECT * FROM consent_events WHERE user_id=? AND purpose_id=? ORDER BY id DESC LIMIT 1",
@@ -205,9 +228,15 @@ def publish_notice():
     if not version or not text:
         return jsonify({"error": "version and text are required", "reason_code": "INVALID_NOTICE"}), 400
     digest = hashlib.sha256(text.encode("utf-8")).hexdigest()
-    with get_db() as con:
+    with db_session() as con:
         con.execute("INSERT INTO notices(version,text,sha256,created_at) VALUES(?,?,?,?)",
                     (version, text, digest, utc_now()))
+        con.execute(
+            "INSERT INTO system_events(event_id,event_type,details,created_at,notice_version,notice_hash) "
+            "VALUES(?,?,?,?,?,?)",
+            (str(uuid.uuid4()), "NOTICE_PUBLISHED", "A new notice version became active.",
+             utc_now(), version, digest),
+        )
     return jsonify({"version": version, "sha256": digest}), 201
 
 
@@ -216,12 +245,13 @@ def audit_export():
     fmt = request.args.get("format", "json").lower()
     if fmt not in ("json", "csv"):
         return jsonify({"error": "format must be json or csv"}), 400
-    with get_db() as con:
+    with db_session() as con:
         rows = [dict(r) for r in con.execute(
             "SELECT * FROM (SELECT 'consent' AS record_type,event_id AS record_id,user_id,purpose_id,action AS result,"
             "action AS reason_code,created_at,notice_version,notice_hash FROM consent_events "
             "UNION ALL SELECT 'access',request_id,user_id,purpose_id,decision,reason_code,created_at,notice_version,notice_hash "
-            "FROM access_decisions) ORDER BY created_at"
+            "FROM access_decisions UNION ALL SELECT 'system',event_id,'system','SYSTEM',event_type,details,created_at,"
+            "notice_version,notice_hash FROM system_events) ORDER BY created_at"
         ).fetchall()]
     if fmt == "json":
         return Response(json.dumps(rows, indent=2), mimetype="application/json",

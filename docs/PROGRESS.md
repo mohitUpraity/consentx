@@ -4,13 +4,13 @@ Last reviewed: 2026-11-24. This page tracks ConsentX implementation and its own 
 
 ## Overall
 
-- Stage: First local UI/API slice; interaction verification pending
-- Version: **1.0.0 baseline** (initial demo slice, not PS-002 completion)
-- Mandatory requirements complete: **0 / 11**
-- Tasks complete: **3 / 23** (12 in progress)
-- Evidence items captured: **0 / 11**
-- Lifecycle tests passing: **0 / 12 required** (not run)
-- Test procedures: written in `docs/TEST_PLAN.md`; automated tests and a passing run are still pending
+- Stage: v1.1.0 API/lifecycle verification checkpoint passed; manual demo evidence pending
+- Version: **1.1.0** (initial slice plus notice-publication audit event; pending verification)
+- Mandatory requirements complete: **1 / 11**
+- Tasks complete: **7 / 24** (12 in progress)
+- Evidence items captured: **1 / 11** (automated test report)
+- Lifecycle tests passing: **19 / 12 required**
+- Test procedures: written in `docs/TEST_PLAN.md`; 19 automated cases passed, manual browser walkthrough remains
 - Major PS-002 workstreams: tracked in the summary table at the top of `docs/TASKS.md`
 - Demo: UI visible at `http://localhost:5001` in the user's screenshot; required lifecycle not yet verified end to end
 
@@ -27,7 +27,7 @@ These counts change only when implementation exists and its proof is recorded. A
 | R-05 Mock API enforcement | In progress | Endpoint/UI code exists; allow/deny proof pending |
 | R-06 Withdrawal denial | In progress | Endpoint/UI code exists; withdrawal then denial not demonstrated |
 | R-07 Audit/export | In progress | UI links/endpoints exist; exported records not verified |
-| R-08 12+ passing tests | Not started | — |
+| R-08 12+ passing tests | Done | `evidence/test-results.txt` (19 passed) |
 | R-09 Demo flow | In progress | UI is present; complete sequence not demonstrated |
 | R-10 Pseudocode | In progress | Draft exists; align with verified runtime behavior |
 | R-11 Submission materials | Not started | — |

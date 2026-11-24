@@ -1,0 +1,28 @@
+ConsentX PS-002 verification
+Date: 2026-11-24
+Command: .venv/bin/python -m unittest discover -s tests -v
+Python 3.13.9
+test_01_health_and_version (test_ps002.PS002LifecycleTests.test_01_health_and_version) ... ok
+test_02_exactly_three_purposes_and_demo_users (test_ps002.PS002LifecycleTests.test_02_exactly_three_purposes_and_demo_users) ... ok
+test_03_missing_consent_denied_without_payload (test_ps002.PS002LifecycleTests.test_03_missing_consent_denied_without_payload) ... ok
+test_04_grant_records_notice_evidence (test_ps002.PS002LifecycleTests.test_04_grant_records_notice_evidence) ... ok
+test_05_matching_grant_allows_payload (test_ps002.PS002LifecycleTests.test_05_matching_grant_allows_payload) ... ok
+test_06_grant_does_not_authorize_other_purpose (test_ps002.PS002LifecycleTests.test_06_grant_does_not_authorize_other_purpose) ... ok
+test_07_purposes_can_be_granted_independently (test_ps002.PS002LifecycleTests.test_07_purposes_can_be_granted_independently) ... ok
+test_08_withdrawal_blocks_next_request (test_ps002.PS002LifecycleTests.test_08_withdrawal_blocks_next_request) ... ok
+test_09_withdrawal_does_not_change_other_purpose (test_ps002.PS002LifecycleTests.test_09_withdrawal_does_not_change_other_purpose) ... ok
+test_10_notice_change_denies_old_grant_and_is_audited (test_ps002.PS002LifecycleTests.test_10_notice_change_denies_old_grant_and_is_audited) ... ok
+test_11_reconsent_under_new_notice_restores_access (test_ps002.PS002LifecycleTests.test_11_reconsent_under_new_notice_restores_access) ... ok
+test_12_unknown_purpose_denied_and_logged (test_ps002.PS002LifecycleTests.test_12_unknown_purpose_denied_and_logged) ... ok
+test_13_unknown_user_denied_and_logged (test_ps002.PS002LifecycleTests.test_13_unknown_user_denied_and_logged) ... ok
+test_14_audit_contains_consent_access_and_notice_events (test_ps002.PS002LifecycleTests.test_14_audit_contains_consent_access_and_notice_events) ... ok
+test_15_json_export_shape (test_ps002.PS002LifecycleTests.test_15_json_export_shape) ... ok
+test_16_csv_export_matches_json_row_count (test_ps002.PS002LifecycleTests.test_16_csv_export_matches_json_row_count) ... ok
+test_17_notice_hash_recomputes_from_exact_text (test_ps002.PS002LifecycleTests.test_17_notice_hash_recomputes_from_exact_text) ... ok
+test_18_invalid_consent_action_rejected_without_event (test_ps002.PS002LifecycleTests.test_18_invalid_consent_action_rejected_without_event) ... ok
+test_19_ui_renders_version_and_three_purposes (test_ps002.PS002LifecycleTests.test_19_ui_renders_version_and_three_purposes) ... ok
+
+----------------------------------------------------------------------
+Ran 19 tests in 0.357s
+
+OK

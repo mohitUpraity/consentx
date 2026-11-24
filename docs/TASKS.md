@@ -11,8 +11,8 @@ This is the top-level view of the challenge deliverables. The detailed tasks bel
 | A. Synthetic service, users and exactly three purposes | R-01, R-02 | T-001, T-010, T-011, T-020, T-030 | In progress | UI/API expose CampusPulse, two synthetic users and only P1–P3; automated exact-catalog test passes. |
 | B. Purpose-specific grant/withdraw and notice version/hash | R-03, R-04 | T-010–T-013, T-020, T-030 | In progress | Append-only grant/withdraw records include purpose, UTC timestamp and active notice version/hash; notice hash independently verified. |
 | C. Mock downstream consumer enforces current consent | R-05, R-06 | T-021–T-023, T-031 | In progress | API allows only matching current grants; missing, withdrawn, stale and unverifiable states deny with no payload. |
-| D. Audit records and export | R-07 | T-010, T-022, T-032, T-033, T-046 | In progress | Consent and all allow/deny decisions appear in matching JSON/CSV exports; invalid user/purpose denials are audited. |
-| E. 12+ lifecycle/enforcement tests | R-08 | T-040, T-041, T-046 | Not started | At least 12 distinct tests pass against an isolated DB; exact output saved. Test cases are specified in `TEST_PLAN.md`. |
+| D. Audit records and export | R-07 | T-010, T-022, T-032, T-033, T-046, T-049 | In progress | Consent, all allow/deny decisions and notice publications appear in matching JSON/CSV exports; invalid user/purpose denials are audited. |
+| E. 12+ lifecycle/enforcement tests | R-08 | T-040, T-041, T-046 | Done | 19 tests pass against isolated temporary DBs; output saved at `evidence/test-results.txt`. |
 | F. Required demo and pseudocode | R-09, R-10 | T-031, T-042–T-044 | In progress | Recorded grant → allow → withdraw → deny → notice change → stale deny → re-consent flow; pseudocode matches code. |
 | G. Hackathon submission items | R-11 | T-045 | Not started | Private repo/collaboration steps, required structure PDF and mentor demo are ready. |
 
@@ -47,14 +47,19 @@ This is the top-level view of the challenge deliverables. The detailed tasks bel
 
 ## M4 — Verification and demo
 
-- [ ] T-040 Implement at least 12 distinct lifecycle/enforcement tests (R-08). Proof: test inventory mapped to requirement IDs.
-- [ ] T-041 Run tests on a clean database; fix failures; save exact command/output and date (R-08). Proof: `evidence/test-results.txt`.
+- [x] T-040 Implement at least 12 distinct lifecycle/enforcement tests (R-08). Proof: 19 cases in `tests/test_ps002.py`, mapped in `docs/TEST_PLAN.md`.
+- [x] T-041 Run tests on isolated temporary databases; fix failures; save exact command/output and date (R-08). Proof: `evidence/test-results.txt` (19 passed).
 - [ ] T-042 Capture allow, withdrawal, deny, notice-change, stale-deny and re-consent evidence (R-03–R-09). Proof: `evidence/` files referenced by the evidence index.
 - [ ] T-043 Write pseudocode that mirrors the final enforcement code (R-10). Proof: `DEMO_PSEUDOCODE.md` reviewed against implementation.
 - [ ] T-044 Rehearse and record a clean-start demo; verify exported audit trail matches the screen flow (R-09). Proof: demo artifact and evidence checklist.
 - [ ] T-045 Complete private repository, collaboration, PDF and mentor-demo submission checklist (R-11). Proof: checklist in evidence index.
-- [/] T-046 Log every rejected access decision, including unknown user/purpose requests, so audit behavior matches R-07. Code now records these rejections; proof still needs tests and exported records.
+- [x] T-046 Log every rejected access decision, including unknown user/purpose requests, so audit behavior matches R-07. Proof: tests T-12/T-13 assert denial audit rows.
 - [x] T-047 Write feature-by-feature verification procedures and expected results. Proof: `docs/TEST_PLAN.md` (this documents the plan; it does not mean tests have passed).
+- [x] T-049 Record notice publication as a system audit event and include it in JSON/CSV exports. Proof: T-10/T-14/T-16 verify notice event and export contents.
+
+## Next PS-002 verification checkpoint
+
+At this checkpoint, the automated suite has been run against the features built so far. Remaining manual UI walkthrough and saved demo/export artifacts are still open; rerun the full suite after the next code change and complete those manual proofs before marking the related requirements Done.
 
 ## Suggested order
 

@@ -65,7 +65,7 @@ Do not run a case against a database already used by a previous run unless the c
 
 ## Automated lifecycle/enforcement cases
 
-Create at least these 18 independent automated cases. Tests should call the Flask test client or API against a temporary database; they should assert both HTTP status and response fields. Each must be repeatable without relying on order.
+The current suite contains 19 independent automated cases. Tests call the Flask test client against a temporary database and assert HTTP status and response fields. Keep them repeatable without relying on order.
 
 | Test | Setup/action | Expected result |
 |---|---|---|
@@ -82,10 +82,10 @@ Create at least these 18 independent automated cases. Tests should call the Flas
 | T-11 Re-consent restores access | After T-10, grant P1 again and request | New event references v2/hash; request 200 `ACTIVE_CONSENT`. |
 | T-12 Unknown purpose fails closed | Request purpose `P9` | 400 `INVALID_PURPOSE`; no data payload; an `INVALID_PURPOSE` DENY audit row exists. Verify code with T-046. |
 | T-13 Unknown user fails closed | Request `unknown-user` for P1 | 403 `UNKNOWN_USER`; no payload; an `UNKNOWN_USER` DENY audit row exists. Verify code with T-046. |
-| T-14 Audit records lifecycle | Grant, allow, withdraw, deny P1 | Audit has corresponding consent and access rows with user, purpose, result/reason, timestamp and notice reference. |
-| T-15 JSON export shape | `GET /api/audit?format=json` after T-14 | 200 JSON array; required event fields exist; rows match the actions just performed. |
+| T-14 Audit records lifecycle | Grant, allow, withdraw, deny P1, publish v2 | Audit has consent, access and `NOTICE_PUBLISHED` system rows with purpose/result/reason, timestamp and notice reference. |
+| T-15 JSON export shape | `GET /api/audit?format=json` after T-14 | 200 JSON array; required event fields exist; consent, access and notice publication rows match the actions just performed. |
 | T-16 Notice hash is reproducible | Read active notice; independently SHA-256 its exact UTF-8 text | Recomputed digest equals `sha256` returned by state/consent API. |
-| T-17 CSV export shape | `GET /api/audit?format=csv` after T-14 | 200 `text/csv`; header and row count match JSON export. |
+| T-17 CSV export shape | `GET /api/audit?format=csv` after T-14 | 200 `text/csv`; header and row count match JSON export, including notice publication. |
 | T-18 Input validation | Try invalid action, missing version/text for notice, and malformed JSON | 4xx response; no consent grant or payload is created. Record each exact observed result. |
 
 **Verification note:** T-046 now writes audit rows for unknown users and purposes. Keep R-07 in progress until automated checks confirm both rejection rows appear in JSON/CSV exports.
@@ -107,4 +107,4 @@ For every request, inspect that identity and purpose validation happen before pa
 
 ## Test output and completion rule
 
-When an automated suite is added, run it with a fresh temporary DB and save the exact command, date, Python version, collected/passed/failed count and output at `evidence/test-results.txt`. Keep the case list mapped to R-01–R-11. R-08 remains Not started until at least 12 distinct lifecycle/enforcement tests pass; writing this plan alone does not satisfy it.
+Run the suite with `.venv/bin/python -m unittest discover -s tests -v`. Each test creates an isolated temporary DB. Save the exact command, date, Python version, passed/failed count and output at `evidence/test-results.txt`. Keep the case list mapped to R-01–R-11. R-08 requires at least 12 distinct lifecycle/enforcement tests to pass; writing this plan alone does not satisfy it.

@@ -13,8 +13,8 @@ This file is the evidence index. Evidence must come from the current ConsentX bu
 | E-05 | Withdrawal event then denied next request with no payload | R-03, R-06 | `evidence/withdraw.json`, `evidence/deny-after-withdraw.json` | Not captured |
 | E-06 | Purpose isolation: P1 grant does not authorize P2/P3 | R-02, R-05 | automated test output | Not captured |
 | E-07 | Notice v2/hash, stale-consent denial, fresh re-consent | R-04, R-09 | `evidence/notice-change.json` and test output | Not captured |
-| E-08 | JSON and CSV exports with matching event history | R-07 | `evidence/audit.json`, `evidence/audit.csv` | Not captured |
-| E-09 | At least 12 tests pass on clean test database | R-08 | `evidence/test-results.txt` | Not captured |
+| E-08 | JSON and CSV exports with matching consent, access-decision and notice-publication events | R-07 | `evidence/audit.json`, `evidence/audit.csv` | Not captured |
+| E-09 | At least 12 tests pass on clean test database | R-08 | `evidence/test-results.txt` | Captured: 19 passed |
 | E-10 | End-to-end recorded walkthrough | R-09 | `evidence/demo.*` | Not captured |
 | E-11 | Final pseudocode and submission checklist | R-10, R-11 | `docs/DEMO_PSEUDOCODE.md`, submission evidence | Not captured |
 
