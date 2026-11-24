@@ -1,6 +1,6 @@
 # Feature Test Plan
 
-This plan turns each PS-002 requirement into reproducible checks. It is **not** itself a test result. The 24-case automated suite passed for v1.3.0; see `evidence/test-results.txt` for the exact run and [WALKTHROUGH.md](WALKTHROUGH.md) for plain-language explanations and presenter notes.
+This plan turns each PS-002 requirement into reproducible checks. It is **not** itself a test result. The 28-case automated suite passed for the v1.5.0 code baseline; see `evidence/test-results.txt` for the exact run and [WALKTHROUGH.md](WALKTHROUGH.md) for plain-language explanations and presenter notes.
 
 ## What PS-002 failure each feature addresses
 
@@ -65,7 +65,7 @@ Do not run a case against a database already used by a previous run unless the c
 
 ## Automated lifecycle/enforcement cases
 
-The current suite contains 24 independent automated cases. Tests call the Flask test client against a temporary database and assert HTTP status and response fields. Keep them repeatable without relying on order.
+The current suite contains 28 independent automated cases. Tests call the Flask test client against a temporary database and assert HTTP status and response fields. Keep them repeatable without relying on order.
 
 | Test | Setup/action | Expected result |
 |---|---|---|
@@ -93,6 +93,10 @@ The current suite contains 24 independent automated cases. Tests call the Flask 
 | T-22 Decision audit filter | Create allowed and denied requests; request `decision=ALLOW` | Only ALLOW access-decision rows are returned. |
 | T-23 Invalid audit filters | Try unknown user, purpose and decision values | Each returns 400 with a stable reason code. |
 | T-24 Filtered CSV consistency | Filter by P1 and fetch JSON and CSV | Same row count and purpose in both exports. |
+| T-25 Test/demo database isolation | Run a lifecycle test with its fixture | App enters test mode against a per-test temporary DB; the path differs from the normal `instance/consentx.sqlite3`; teardown restores the prior `TESTING` setting. |
+| T-26 Allow decision trace | Grant P1 and request P1 | Response contains PASS for user, purpose, latest consent and notice, then RELEASED; payload is present. |
+| T-27 Withdrawal decision trace | Grant P1, withdraw P1, request P1 | Latest-consent check fails; final trace is WITHHELD; response is DENY with `payload: null`. |
+| T-28 Notice history | Publish v2, then fetch state | History is newest first, contains both stored versions, and current history digest equals the active notice digest. |
 
 **Verification note:** T-046 writes audit rows for unknown users and purposes; T-12/T-13 assert those rows. Full and filtered JSON/CSV outputs from the current manual run are saved under `evidence/`. Keep R-07 complete only while those artifacts and automated checks remain valid.
 
@@ -110,10 +114,15 @@ For click-by-click steps and what to say while demonstrating each feature, use [
 | M-04 | Use JSON and CSV export links after M-01. | Both contain the same consent/access sequence and notice references. |
 | M-05 | Filter audit by user, purpose and ALLOW/DENY; export each filtered view as JSON and CSV. | Displayed rows and both exports match the selected filters; invalid filter values return a clear 4xx response. |
 | M-06 | Generate grant, allow, deny, withdrawal and notice-publication events. Inspect each timeline row and its user, purpose, action/decision, reason/details, notice version/hash, timestamp and event ID. | Each field is readable and corresponds to the matching row in the JSON/CSV export. System events identify themselves as system events; access denials show the reason and never imply a payload was returned. |
+| M-07 | Create or use more than 12 audit events. Record the initial count, choose **Load older events**, then apply a filter and load older matching rows. | The timeline starts with the newest 12; each click adds up to 12 older matching rows; the visible/total count updates; load control disappears when all matching rows are shown. Filtering resets the visible count to 12 and export URLs retain the active filters. |
 
 M-01 lifecycle was exercised on 2026-11-24 and its API/audit outputs are saved in `evidence/`; a screenshot/video is still needed. M-02 P1 authorization isolation from P2 and P3 was exercised; see `evidence/manual-p3-deny.json`. M-03 persistence after refresh was observed. M-05 user/purpose/decision filters were exercised and filtered JSON/CSV responses were saved; screenshot remains. For M-04, clicking the export links in connected Chrome was blocked with `ERR_BLOCKED_BY_CLIENT`; the live endpoints were fetched directly and both returned HTTP 200 with matching row counts (`evidence/live-export-ui-check.*`). Repeat the click in the user's regular browser if download behavior needs separate confirmation. Use synthetic evidence only; never put real personal data or secrets in captures.
 
 **v1.3.0 M-06 verification (2026-11-24):** Live browser at `http://localhost:5001/` rendered timeline rows with event type, synthetic user, purpose, action/decision, reason/details, notice version/hash, timestamp, and event ID. Observed an access denial (`CONSENT_WITHDRAWN`) and consent grant/withdrawal entries. See `evidence/v1.3-audit-timeline-check.md`; a saved screenshot remains pending.
+
+**v1.4.0 M-07 verification (2026-11-24):** Browser opened with 12 of 55 events. Loading older rows showed 24 and then 48. Selecting P1 reset the timeline to 12 of 42 and updated the JSON/CSV links with `purpose_id=P1`. Loading older P1 rows reached 42 of 42 and hid the control. See `evidence/v1.4-audit-history-check.md`.
+
+**Test/demo isolation review:** Test fixtures replace the module database path with a temporary per-test file, enable Flask testing only within the fixture, restore the previous setting in teardown, and assert that the active test path is not `instance/consentx.sqlite3`. `app.py` has no test-only bypass route or authorization switch. T-25 covers the fixture boundary.
 
 ## Pseudocode/manual API review
 

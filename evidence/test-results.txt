@@ -1,8 +1,8 @@
 ConsentX PS-002 verification
-Application version: 1.3.0
+Application version: 1.5.0
 Date: 2026-11-24
 Command: .venv/bin/python -m unittest discover -s tests -v
-Python 3.13.9
+Python: Python 3.13.9
 test_01_health_and_version (test_ps002.PS002LifecycleTests.test_01_health_and_version) ... ok
 test_02_exactly_three_purposes_and_demo_users (test_ps002.PS002LifecycleTests.test_02_exactly_three_purposes_and_demo_users) ... ok
 test_03_missing_consent_denied_without_payload (test_ps002.PS002LifecycleTests.test_03_missing_consent_denied_without_payload) ... ok
@@ -27,8 +27,12 @@ test_21_audit_filters_by_purpose (test_ps002.PS002LifecycleTests.test_21_audit_f
 test_22_decision_filter_returns_access_decisions_only (test_ps002.PS002LifecycleTests.test_22_decision_filter_returns_access_decisions_only) ... ok
 test_23_invalid_audit_filters_return_400 (test_ps002.PS002LifecycleTests.test_23_invalid_audit_filters_return_400) ... ok
 test_24_filtered_csv_matches_filtered_json (test_ps002.PS002LifecycleTests.test_24_filtered_csv_matches_filtered_json) ... ok
+test_25_test_fixture_isolated_from_demo_database (test_ps002.PS002LifecycleTests.test_25_test_fixture_isolated_from_demo_database) ... ok
+test_26_allow_response_explains_every_policy_check (test_ps002.PS002LifecycleTests.test_26_allow_response_explains_every_policy_check) ... ok
+test_27_withdrawal_trace_shows_why_payload_was_withheld (test_ps002.PS002LifecycleTests.test_27_withdrawal_trace_shows_why_payload_was_withheld) ... ok
+test_28_notice_history_is_newest_first_and_hash_linked (test_ps002.PS002LifecycleTests.test_28_notice_history_is_newest_first_and_hash_linked) ... ok
 
 ----------------------------------------------------------------------
-Ran 24 tests in 0.723s
+Ran 28 tests in 0.474s
 
 OK

@@ -6,13 +6,81 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-  <header><div><span class="eyebrow">CAMPUSPULSE · CONSENTX v{{ app_version }} · SYNTHETIC DEMO</span><h1>Your data, your choice.</h1><p>Choose separately what CampusPulse may use. You can withdraw any choice later.</p></div><span class="pill" id="notice-pill">Loading notice…</span></header>
-  <main>
-    <section class="notice card"><div><span class="eyebrow">CURRENT PRIVACY NOTICE</span><h2 id="notice-version">—</h2><p id="notice-text"></p><code id="notice-hash"></code></div><div class="operator"><label for="user-select">Demo account</label><select id="user-select">{% for uid, name in users.items() %}<option value="{{ uid }}">{{ name }}</option>{% endfor %}</select><button id="publish-notice" class="secondary">Publish notice v2</button></div></section>
-    <section><div class="section-heading"><div><span class="eyebrow">PURPOSE CONTROLS</span><h2>Choose what to allow</h2></div><span class="muted">Each purpose is independent</span></div><div id="purpose-list" class="purpose-list"></div></section>
-    <section class="card consumer"><div><span class="eyebrow">MOCK DOWNSTREAM CONSUMER</span><h2>Request data</h2><p>Each request checks the latest consent before releasing a synthetic payload.</p></div><div class="request-controls"><select id="request-purpose"></select><button id="request-data">Send request</button></div><pre id="request-result">Choose a purpose and send a request.</pre></section>
-    <section class="card audit"><div class="section-heading"><div><span class="eyebrow">AUDIT TRAIL</span><h2>Recent events</h2></div><div class="buttons"><a id="export-json" href="/api/audit?format=json">Export JSON</a><a id="export-csv" href="/api/audit?format=csv">Export CSV</a></div></div><div class="audit-filters"><label>User<select id="audit-user"><option value="">All users</option>{% for uid, name in users.items() %}<option value="{{ uid }}">{{ name }}</option>{% endfor %}</select></label><label>Purpose<select id="audit-purpose"><option value="">All purposes</option>{% for pid, purpose in purposes.items() %}<option value="{{ pid }}">{{ pid }} · {{ purpose.name }}</option>{% endfor %}</select></label><label>Decision<select id="audit-decision"><option value="">All events</option><option value="ALLOW">Allowed</option><option value="DENY">Denied</option></select></label></div><div id="audit-list" class="audit-list"></div></section>
-    <p class="footnote">Synthetic demo only. This prototype demonstrates technical consent evidence; it is not legal certification.</p>
-  </main>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="#dashboard" aria-label="ConsentX dashboard">
+        <span class="brand-mark" aria-hidden="true">C</span>
+        <span><strong>ConsentX</strong><small>CampusPulse · PS-002</small></span>
+      </a>
+      <span class="nav-label">WORKSPACE</span>
+      <nav class="main-nav" aria-label="Main navigation">
+        <a class="nav-link active" href="#dashboard" data-view="dashboard"><span class="nav-icon">⌂</span>Dashboard</a>
+        <a class="nav-link" href="#consent" data-view="consent"><span class="nav-icon">◉</span>Consent management</a>
+        <a class="nav-link" href="#simulator" data-view="simulator"><span class="nav-icon">⇄</span>Data access simulator</a>
+        <a class="nav-link" href="#notices" data-view="notices"><span class="nav-icon">▤</span>Notice versions</a>
+        <a class="nav-link" href="#audit" data-view="audit"><span class="nav-icon">≋</span>Audit &amp; tests</a>
+      </nav>
+      <div class="sidebar-bottom"><span class="live-dot"></span><span><strong>Synthetic environment</strong><small>Server-side enforcement enabled</small></span></div>
+      <span class="sidebar-version">ConsentX v{{ app_version }}</span>
+    </aside>
+
+    <div class="workspace">
+      <div class="topbar">
+        <div class="breadcrumb"><strong>ConsentX</strong><span>/</span><span id="current-section">Dashboard</span></div>
+        <div class="topbar-actions"><span class="environment-pill"><span class="live-dot"></span>DEMO</span><label for="user-select">Demo user</label><select id="user-select">{% for uid, name in users.items() %}<option value="{{ uid }}">{{ name }}</option>{% endfor %}</select></div>
+      </div>
+
+      <main>
+        <section id="view-dashboard" class="view active" aria-labelledby="dashboard-title">
+          <div class="page-heading"><div><span class="eyebrow">OVERVIEW / CONTROL PLANE</span><h1 id="dashboard-title">Consent control center</h1><p>Consent can be recorded and still ignored. ConsentX checks the latest purpose decision before every data request.</p></div><span class="server-badge"><span class="live-dot"></span>Policy enforcement active</span></div>
+          <div class="problem-callout"><span class="callout-icon">!</span><div><strong>The failure PS-002 is trying to prevent</strong><p>A withdrawal must reach the point where data is shared. This demo checks the current grant and notice before it releases even synthetic data.</p></div></div>
+          <div class="metric-grid">
+            <article class="metric-card"><span class="metric-icon blue">◎</span><span class="metric-label">Synthetic accounts</span><strong id="metric-users">2</strong><small>Fictional demo identities</small></article>
+            <article class="metric-card"><span class="metric-icon green">✓</span><span class="metric-label">Active purpose grants</span><strong id="metric-grants">—</strong><small id="metric-grants-caption">For the selected account</small></article>
+            <article class="metric-card"><span class="metric-icon purple">⇄</span><span class="metric-label">Access decisions</span><strong id="metric-requests">—</strong><small>Recorded allow and deny checks</small></article>
+            <article class="metric-card"><span class="metric-icon orange">⊘</span><span class="metric-label">Requests denied</span><strong id="metric-denied">—</strong><small>Protected payload withheld</small></article>
+          </div>
+          <div class="dashboard-grid">
+            <section class="panel purpose-overview"><div class="panel-heading"><div><span class="eyebrow">ACCESS BOUNDARIES</span><h2>Three separate purposes</h2></div><a href="#consent" class="text-link">Manage consent <span>→</span></a></div><div id="dashboard-purposes" class="dashboard-purpose-list"></div></section>
+            <section class="panel flow-panel"><span class="eyebrow">REQUEST-TIME POLICY</span><h2>One request, checked in order</h2><ol class="flow-list"><li><span>1</span><div><strong>Identify the synthetic user</strong><small>Unknown identities fail closed.</small></div></li><li><span>2</span><div><strong>Match the exact purpose</strong><small>A P1 grant cannot unlock P2 or P3.</small></div></li><li><span>3</span><div><strong>Read the latest event and notice</strong><small>Withdrawal or stale notice means deny.</small></div></li><li><span>4</span><div><strong>Release only that purpose's data</strong><small>Every decision is recorded for review.</small></div></li></ol><a class="button-link" href="#simulator">Try a request <span>→</span></a></section>
+          </div>
+          <div class="notice-summary panel"><div><span class="eyebrow">ACTIVE PRIVACY NOTICE</span><h2 id="dashboard-notice-version">Loading…</h2><p id="dashboard-notice-text"></p></div><div class="digest-block"><span>SHA-256 content digest</span><code id="dashboard-notice-hash"></code></div><a href="#notices" class="text-link">View versions →</a></div>
+          <p class="scope-note">Synthetic technical prototype · No real personal data · No legal-compliance claim</p>
+        </section>
+
+        <section id="view-consent" class="view" aria-labelledby="consent-title">
+          <div class="page-heading"><div><span class="eyebrow">CONSENT / PURPOSES</span><h1 id="consent-title">Consent management</h1><p>Grant or withdraw each purpose independently. Every action creates a new event; earlier choices remain in the audit trail.</p></div><span class="scope-chip">3 independent purposes</span></div>
+          <div class="notice-inline"><strong>Purpose boundary</strong><span>A grant for one purpose never authorizes either of the others.</span><span id="consent-notice-current"></span></div>
+          <div id="purpose-list" class="purpose-list"></div>
+        </section>
+
+        <section id="view-simulator" class="view" aria-labelledby="simulator-title">
+          <div class="page-heading"><div><span class="eyebrow">SIMULATOR / DOWNSTREAM API</span><h1 id="simulator-title">Data access simulator</h1><p>Send a synthetic consumer request and inspect the server's decision before any payload is returned.</p></div><span class="server-badge"><span class="live-dot"></span>Backend enforced</span></div>
+          <div class="simulator-grid">
+            <section class="panel request-builder"><span class="eyebrow">REQUEST CONFIGURATION</span><h2>Build a request</h2><label for="request-purpose">Purpose being requested</label><div class="request-controls"><select id="request-purpose"></select><button id="request-data">Send request <span>→</span></button></div><div class="request-preview"><span class="http-method">POST</span><code>/api/data-access</code><pre id="request-json">{}</pre></div><p class="microcopy">Consent is re-read from SQLite for every request. Browser state cannot grant access.</p></section>
+            <section class="panel response-panel"><div class="panel-heading"><div><span class="eyebrow">SERVER RESPONSE</span><h2>Decision trace</h2></div><span id="response-status" class="response-status idle">READY</span></div><p id="response-empty" class="response-empty">Send a request to see each policy check and whether the payload was released.</p><ol id="decision-trace" class="decision-trace" aria-live="polite"></ol><pre id="request-result" aria-live="polite">Choose a purpose and send a request.</pre></section>
+          </div>
+          <div class="explain-note"><strong>What makes this more than a consent toggle?</strong><span>The request endpoint returns payload fields only after a server-side check of the latest user-purpose event and active notice digest.</span></div>
+        </section>
+
+        <section id="view-notices" class="view" aria-labelledby="notice-title">
+          <div class="page-heading"><div><span class="eyebrow">NOTICE / VERSION CONTROL</span><h1 id="notice-title">Notice versions</h1><p>Each consent event points to the exact notice version and SHA-256 digest shown when the choice was made.</p></div><span id="notice-pill" class="environment-pill">Loading notice…</span></div>
+          <div class="notice-manager-grid">
+            <section class="panel notice-editor"><span class="eyebrow">PUBLISH A REVISION</span><h2>Prepare the next notice</h2><div class="notice-warning">Publishing a changed notice makes existing grants stale. Users must confirm again before a request is allowed.</div><label for="notice-text">Notice text</label><textarea id="notice-text" rows="7" maxlength="4000"></textarea><div class="editor-footer"><span id="notice-char-count" class="microcopy"></span><button id="publish-notice">Publish next version</button></div><p id="notice-publish-result" class="microcopy" aria-live="polite">The server calculates and stores the SHA-256 digest.</p></section>
+            <section class="panel notice-history-panel"><div class="panel-heading"><div><span class="eyebrow">IMMUTABLE RECORDS</span><h2>Published versions</h2></div><span id="notice-history-count" class="scope-chip"></span></div><div id="notice-history" class="notice-history"></div></section>
+          </div>
+        </section>
+
+        <section id="view-audit" class="view" aria-labelledby="audit-title">
+          <div class="page-heading"><div><span class="eyebrow">EVIDENCE / VERIFICATION</span><h1 id="audit-title">Audit &amp; tests</h1><p>Inspect consent events and every access decision. Filter the timeline, then export the matching evidence.</p></div><div class="buttons"><a id="export-json" href="/api/audit?format=json">Export JSON</a><a id="export-csv" href="/api/audit?format=csv">Export CSV</a></div></div>
+          <div class="audit-statline"><span><strong id="audit-access-count">—</strong> access decisions</span><span><strong id="audit-consent-count">—</strong> consent events</span><span><span class="live-dot"></span>Persisted in SQLite</span></div>
+          <section class="panel audit"><div class="panel-heading"><div><span class="eyebrow">APPEND-ONLY EVENTS</span><h2>Audit trail</h2></div></div><div class="audit-filters"><label>User<select id="audit-user"><option value="">All users</option>{% for uid, name in users.items() %}<option value="{{ uid }}">{{ name }}</option>{% endfor %}</select></label><label>Purpose<select id="audit-purpose"><option value="">All purposes</option>{% for pid, purpose in purposes.items() %}<option value="{{ pid }}">{{ pid }} · {{ purpose.name }}</option>{% endfor %}</select></label><label>Decision<select id="audit-decision"><option value="">All events</option><option value="ALLOW">Allowed</option><option value="DENY">Denied</option></select></label></div><p id="audit-count" class="muted" aria-live="polite"></p><div id="audit-list" class="audit-list"></div><button id="audit-load-older" class="secondary" type="button" hidden>Load older events</button></section>
+          <div class="test-evidence"><span class="test-check">✓</span><div><strong>Lifecycle and enforcement suite: 28 passing tests</strong><p>Isolated temporary database · decision-trace checks · purpose isolation · withdrawal denial · notice invalidation · JSON/CSV consistency.</p></div><a href="/api/health" target="_blank" rel="noreferrer">Check API health ↗</a></div>
+          <p class="scope-note">Automated evidence proves prototype behavior only. It does not establish legal compliance or production security.</p>
+        </section>
+      </main>
+    </div>
+  </div>
   <script src="{{ url_for('static', filename='app.js') }}"></script>
-</body></html>
+</body>
+</html>

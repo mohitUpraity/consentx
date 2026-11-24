@@ -11,10 +11,10 @@ This is the top-level view of the challenge deliverables. The detailed tasks bel
 | A. Synthetic service, users and exactly three purposes | R-01, R-02 | T-001, T-010, T-011, T-020, T-030 | In progress | UI/API expose CampusPulse, two synthetic users and only P1–P3; automated exact-catalog test passes. |
 | B. Purpose-specific grant/withdraw and notice version/hash | R-03, R-04 | T-010–T-013, T-020, T-030 | In progress | Append-only grant/withdraw records include purpose, UTC timestamp and active notice version/hash; notice hash independently verified. |
 | C. Mock downstream consumer enforces current consent | R-05, R-06 | T-021–T-023, T-031 | In progress | API allows only matching current grants; missing, withdrawn, stale and unverifiable states deny with no payload. |
-| D. Audit records and export | R-07 | T-010, T-022, T-032, T-033, T-046, T-049, T-050 | In progress | API exports captured and consistency checked; browser confirms detailed event rows; saved screenshot remains pending. |
-| E. 12+ lifecycle/enforcement tests | R-08 | T-040, T-041, T-046 | Done | 24 tests pass against isolated temporary DBs; output saved at `evidence/test-results.txt`. |
+| D. Audit records and export | R-07 | T-010, T-022, T-032, T-033, T-046, T-049, T-050, T-051 | In progress | API exports captured and consistency checked; full-history paging and filter reset verified in browser; saved screenshot remains pending. |
+| E. 12+ lifecycle/enforcement tests | R-08 | T-023, T-040, T-041, T-046, T-052 | Done | 28 tests pass; fixture explicitly uses a temporary DB, restores TESTING config, and avoids the demo DB; output saved at `evidence/test-results.txt`. |
 | F. Required demo and pseudocode | R-09, R-10 | T-031, T-042–T-044 | In progress | Recorded grant → allow → withdraw → deny → notice change → stale deny → re-consent flow; pseudocode matches code. |
-| G. Hackathon submission items | R-11 | T-045 | Not started | Private repo/collaboration steps, required structure PDF and mentor demo are ready. |
+| G. Hackathon submission items | R-11 | T-045 | Not started | Repository privacy/collaboration proof, the required structure PDF, and mentor-demo preparation have not been verified. |
 
 **Current overall state:** Workstream E (automated lifecycle/enforcement tests) is complete. Other workstreams remain in progress or not started because full acceptance proof is pending. Update this table together with detailed task checkboxes and `PROGRESS.md`.
 
@@ -36,7 +36,7 @@ This is the top-level view of the challenge deliverables. The detailed tasks bel
 - [/] T-020 Implement consent read/update API with input validation and identity boundary (R-02, R-03). Code exists; API examples and validation verification pending.
 - [/] T-021 Implement mock data-access endpoint; check identity, exact purpose, latest event and notice version before creating a payload (R-05, R-06). Code exists; allow/deny captures and tests pending.
 - [/] T-022 Ensure every denial has a reason code, is audited and releases no protected payload (R-05–R-07). Code exists; response assertions and audit verification pending.
-- [ ] T-023 Keep test fixtures/bypass isolated from demo configuration (quality constraints). Proof: configuration review.
+- [x] T-023 Keep test fixtures/bypass isolated from demo configuration (quality constraints). Proof: `tests/test_ps002.py` patches `DB_PATH` to a per-test temporary directory, restores `TESTING` config after each case, and explicitly asserts test DB differs from the normal demo DB; no bypass route/config exists in `app.py`.
 
 ## M3 — Interface and audit
 
@@ -45,11 +45,13 @@ This is the top-level view of the challenge deliverables. The detailed tasks bel
 - [/] T-032 Build readable audit timeline with filters for user, purpose and decision (R-07). API and browser filter checks pass; saved screen capture remains pending. Chrome blocked the export-link click (`ERR_BLOCKED_BY_CLIENT`) although the live export endpoints return valid files. Null-safe optional filter binding fixed and verified after server restart.
 - [x] T-033 Implement JSON and CSV audit exports with stable fields/timestamps (R-07). Proof: `evidence/manual-lifecycle-audit.json`, `evidence/manual-lifecycle-audit.csv`; automated shape and row-count checks pass.
 - [x] T-050 Show the audit evidence fields clearly in each timeline row: event type, synthetic user, purpose, result/action, reason/details, notice version/hash, timestamp, and event ID (R-07). Proof: v1.3.0 browser observation in `evidence/v1.3-audit-timeline-check.md`; full 24-test suite in `evidence/test-results.txt`.
+- [x] T-051 Let reviewers inspect the full matching audit history in the UI instead of only the newest 12 rows; indicate visible and total counts and progressively load older events (R-07). Proof: browser check in `evidence/v1.4-audit-history-check.md` shows 12→24→48, filter reset to 12 of 42, and all 42 loaded; filtered export URL retained P1.
+- [x] T-052 Present the PS-002 lifecycle in dedicated judge-facing views and explain each server-side request check (R-02–R-09). Proof: v1.5.0 UI and tests T-26–T-28; saved screenshot/recording remains an independent evidence item.
 
 ## M4 — Verification and demo
 
-- [x] T-040 Implement at least 12 distinct lifecycle/enforcement tests (R-08). Proof: 24 cases in `tests/test_ps002.py`, mapped in `docs/TEST_PLAN.md`.
-- [x] T-041 Run tests on isolated temporary databases; fix failures; save exact command/output and date (R-08). Proof: `evidence/test-results.txt` (24 passed).
+- [x] T-040 Implement at least 12 distinct lifecycle/enforcement tests (R-08). Proof: 28 cases in `tests/test_ps002.py`, mapped in `docs/TEST_PLAN.md`.
+- [x] T-041 Run tests on isolated temporary databases; fix failures; save exact command/output and date (R-08). Proof: `evidence/test-results.txt` (28 passed).
 - [x] T-042 Capture allow, withdrawal, deny, notice-change, stale-deny and re-consent evidence (R-03–R-09). Proof: `evidence/manual-lifecycle-responses.json`, `evidence/manual-lifecycle-audit.json`, and `evidence/manual-walkthrough-2026-11-24.md`.
 - [x] T-043 Write pseudocode that mirrors the final enforcement code (R-10). Proof: `docs/DEMO_PSEUDOCODE.md` reviewed against `app.py` and verified lifecycle evidence.
 - [ ] T-044 Rehearse and record a clean-start demo; verify exported audit trail matches the screen flow (R-09). Proof: demo artifact and evidence checklist.
@@ -60,7 +62,7 @@ This is the top-level view of the challenge deliverables. The detailed tasks bel
 
 ## Next PS-002 verification checkpoint
 
-At this checkpoint, the full 24-test automated suite passes through v1.3.0 and the expanded audit-row fields are confirmed in the live browser. Remaining manual UI screenshot and saved demo/export artifacts are still open; do not mark those evidence tasks Done until the artifacts exist.
+At this checkpoint, 28 automated tests pass against isolated temporary databases. Expanded audit-row fields and full-history paging are confirmed in the live browser. The v1.5 control-center screenshot and recorded demo artifacts remain open.
 
 ## Documentation rule for each update
 

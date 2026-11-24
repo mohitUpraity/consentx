@@ -1,6 +1,6 @@
 # ConsentX Personal Walkthrough and Demo Guide
 
-This is the hands-on guide for understanding, checking, and presenting every ConsentX feature. It describes the current **v1.3.0** build. Lifecycle and audit-filter interactions have been walked through in the browser; v1.3.0 detailed timeline fields are verified, while a saved screenshot and recorded demo remain pending.
+This is the hands-on guide for understanding, checking, and presenting every ConsentX feature. It describes the current **v1.5.0** build. Lifecycle, audit filters, timeline detail and older-event paging are browser verified. The redesigned v1.5 view still needs a saved screenshot and a recorded clean-start demo.
 
 ## How to use this guide
 
@@ -211,7 +211,61 @@ Expected: only matching rows. Try an invalid purpose such as `purpose_id=P9`; ex
 
 **Say in the demo:** “Each timeline row explains who did what, for which purpose, under which notice, and the reason for the decision. The event ID lets us match the screen back to the export.”
 
-**Verification status:** Verified in v1.3.0. All 24 automated tests pass. The live browser displayed all listed row fields, including an access denial and consent events. A saved screenshot remains pending; see `evidence/v1.3-audit-timeline-check.md`.
+**Verification status:** Verified in v1.3.0. The 25-case suite at that baseline passed. The live browser displayed all listed row fields, including an access denial and consent events. A saved screenshot remains pending; see `evidence/v1.3-audit-timeline-check.md`.
+
+## Feature 8 — Inspect the full audit history (v1.4)
+
+**PS-002 coverage:** R-07.
+
+**What it means:** The timeline initially shows the newest 12 matching audit events to keep the page quick to scan. Older events remain available in the page through **Load older events**; exports continue to represent the full selected filter set.
+
+**Try it:**
+
+1. Open **Recent events** after enough actions have created more than 12 events.
+2. Note the `Showing 12 of N events` count.
+3. Click **Load older events** once and confirm older rows appear below the newest rows.
+4. Continue until the count reaches the total and the button disappears.
+5. Select a user, purpose, or decision filter and confirm the timeline resets to the newest 12 matching events.
+6. Confirm JSON and CSV export links still include the selected filters.
+
+**What you should see:** Each click adds at most 12 older events. The count reports visible and matching totals, and the control is hidden when every matching event is displayed. Changing filters resets the displayed window.
+
+**Say in the demo:** “The timeline begins with the latest events, and I can load earlier matching evidence without losing the current filters. The exports remain available for the full selected history.”
+
+**Verification status:** Verified in v1.4.0. The 25-case suite at that baseline passed. Browser confirmed counts 12→24→48, filter reset to 12 of 42, loading all 42 matching P1 rows, hiding the control at the end, and retaining the P1 filter in export links. See `evidence/v1.4-audit-history-check.md`.
+
+## Feature 9 — Keep test data separate from the demo (verification)
+
+**PS-002 coverage:** R-08 and the quality constraint against test-only bypasses in the demo.
+
+**What it means:** Lifecycle tests create and remove a temporary SQLite database for each case. They do not grant special authorization or point tests at the normal demo database. The app uses the normal `instance/consentx.sqlite3` file when `CONSENTX_DB` is not set.
+
+**Check it:**
+
+1. Run `.venv/bin/python -m unittest discover -s tests -v` from the project folder.
+2. Confirm T-25 passes in the output.
+3. Inspect `tests/test_ps002.py`: each fixture replaces `DB_PATH` with its own temporary file and restores Flask's prior `TESTING` setting during teardown.
+4. Inspect `app.py` for test-only bypass routes or authorization flags; none should be present.
+
+**Expected result:** T-25 confirms the active test DB is the temporary path and is different from the regular demo DB. All lifecycle tests still pass through the normal request enforcement routes.
+
+**Say in the demo:** “The test suite proves behavior with disposable databases, so its setup does not change the synthetic demo history or add a special allow path.”
+
+**Verification status:** Verified by T-25 and the full 28-test suite on 2026-11-24. See `docs/ARCHITECTURE.md` and `evidence/test-results.txt`.
+
+## Feature 10 — Explain the PEP decision (v1.5)
+
+**PS-002 coverage:** R-05, R-06, R-09.
+
+**What it means:** The dashboard states the request-time problem and shows the policy order. The simulator presents the API response plus a trace of synthetic-user recognition, purpose match, latest consent, active-notice match, and payload release/withholding.
+
+**Try it:** Open **Data Access Simulator**. Request P1 before granting it, grant P1 and request again, then withdraw P1 and retry. Change the notice in **Notice Versions** and retry before re-consenting.
+
+**What you should see:** An ungranted request ends with `DENY` and `WITHHELD`; a matching grant ends with `ALLOW` and `RELEASED`; withdrawal identifies the failed latest-consent check; and a changed notice identifies the mismatch. The API response also includes a request ID and reason code, and the audit row can be matched by request ID.
+
+**Say in the demo:** “The colored cards do not make the decision. Each request is evaluated again on the server, and the trace shows which rule stopped or released the payload.”
+
+**Verification status:** Tests T-26 and T-27 assert allow and withdrawal-deny traces. Test T-28 asserts the notice history ordering and active digest. Full result: 28 tests pass. A browser screenshot of the current v1.5 layout remains pending.
 
 ## Suggested 3-minute PS-002 demo
 
@@ -227,7 +281,7 @@ If time is short, skip API commands during the live demo and keep them for verif
 
 ## What has and has not been verified
 
-- **Automated:** 24 tests passed on 2026-11-24; see `evidence/test-results.txt`.
+- **Automated:** 28 tests passed on 2026-11-24; see `evidence/test-results.txt`.
 - **Browser:** The main lifecycle, user/purpose/decision filters, and persistence after refresh were exercised on an isolated database on 2026-11-24. The current run log is `evidence/manual-walkthrough-2026-11-24.md`.
 - **Still to capture:** Browser screenshots or recording. P3-specific UI denial is now captured. Chrome blocked export-link clicks with `ERR_BLOCKED_BY_CLIENT`, but the live JSON and CSV endpoints returned HTTP 200 with matching row counts; see `evidence/live-export-ui-check.*`. Filtered API responses and full exports are saved under `evidence/`.
 

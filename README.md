@@ -2,7 +2,7 @@
 
 ConsentX is our PS-002 prototype: a synthetic service that records purpose-specific consent and enforces the latest consent state before a mock downstream API releases data.
 
-Current code baseline: **v1.3.0**. This is a local demo prototype, not a claim that PS-002 is complete.
+Current code baseline: **v1.5.0**. This is a local demo prototype, not a claim that PS-002 evidence and submission steps are complete.
 
 ## Project boundary
 
@@ -13,7 +13,7 @@ Current code baseline: **v1.3.0**. This is a local demo prototype, not a claim t
 
 ## Current status
 
-**v1.3.0 audit timeline update is implemented; its full PS-002 verification checkpoint is in progress.** See [progress](docs/PROGRESS.md) for status and [tasks](docs/TASKS.md) for the work queue.
+**v1.5.0 judge-facing control center is implemented.** It presents the dashboard, consent controls, downstream request simulator, notice history, audit exports and a server-generated decision trace in separate views. The lifecycle suite currently has 28 passing tests. Saved screen captures, a recorded clean-start demo, and submission proof are still tracked separately in [progress](docs/PROGRESS.md) and [evidence](docs/EVIDENCE.md).
 
 ## Documents
 
@@ -21,6 +21,8 @@ Current code baseline: **v1.3.0**. This is a local demo prototype, not a claim t
 - [Task plan](docs/TASKS.md)
 - [Feature-by-feature test plan](docs/TEST_PLAN.md)
 - [Personal walkthrough, feature checks and demo script](docs/WALKTHROUGH.md)
+- [Judge brief and honest prototype framing](docs/JUDGE_BRIEF.md)
+- [Live review notes for the two reference apps](docs/COMPETITOR_REVIEW.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Technology choices and alternatives](docs/TECH_STACK.md)
 - [Release notes](docs/RELEASES.md)

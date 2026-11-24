@@ -14,17 +14,25 @@ This file is the evidence index. Evidence must come from the current ConsentX bu
 | E-06 | Purpose isolation: P1 grant does not authorize P2/P3 | R-02, R-05 | `evidence/test-results.txt`, `evidence/manual-p3-deny.json`, `evidence/manual-walkthrough-2026-11-24.md` | Captured for P2 and P3 |
 | E-07 | Notice v2/hash, stale-consent denial, fresh re-consent | R-04, R-09 | `evidence/manual-lifecycle-responses.json`, `evidence/manual-lifecycle-audit.json` | Captured |
 | E-08 | JSON and CSV exports with matching consent, access-decision and notice-publication events | R-07 | `evidence/manual-lifecycle-audit.json`, `evidence/manual-lifecycle-audit.csv`, filtered exports, and `evidence/live-export-ui-check.*` | Live endpoints returned HTTP 200 and matching row counts; Chrome link click was blocked by `ERR_BLOCKED_BY_CLIENT` |
-| E-09 | At least 12 tests pass on clean test database | R-08 | `evidence/test-results.txt` | Captured: 24 passed |
+| E-09 | At least 12 tests pass on clean test database | R-08 | `evidence/test-results.txt` | Captured: 28 passed |
 | E-10 | End-to-end recorded walkthrough | R-09 | `evidence/demo.*` | Not captured (browser run logged, no screenshot/video saved) |
 | E-11 | Final pseudocode and submission checklist | R-10, R-11 | `docs/DEMO_PSEUDOCODE.md`, submission evidence | Pseudocode captured and reviewed; submission proof pending |
 
 ## Observed UI check (2026-11-24)
 
-The user's screenshot shows ConsentX rendered at `localhost:5001` with styling loaded, notice v1.0 and its SHA-256 visible, a demo-account selector, three purpose cards and the mock-consumer/audit sections. This confirms the page is being served through the app rather than opened as a raw template. It does **not** prove button interactions, API decisions, persistence, export contents or the full demo sequence. The screenshot remains in the conversation and has not been copied into the project evidence folder.
+The user's earlier screenshot shows the pre-v1.5 ConsentX screen at `localhost:5001` with notice v1.0, a demo-account selector, three purpose cards and the mock-consumer/audit sections. The updated v1.5 interface still needs a saved screenshot; the earlier image is not proof of the new layout.
 
 ## Version baseline
 
-ConsentX `1.3.0` is the current local demo baseline. It includes purpose consent, withdrawal enforcement, notice versioning, audit exports, audit filters, and readable audit evidence rows. The version label does not mean all PS-002 requirements have passed; the test and evidence counts in `PROGRESS.md` remain authoritative.
+ConsentX `1.5.0` is the current local demo baseline. It includes a five-view control center, purpose consent, withdrawal enforcement, notice version history, request-time decision traces, audit exports and filters, and progressive access to the complete audit history. The version label does not mean all PS-002 evidence and submission requirements have passed; the test and evidence counts in `PROGRESS.md` remain authoritative.
+
+## Latest feature verification
+
+- v1.3.0 audit detail fields: [browser check](../evidence/v1.3-audit-timeline-check.md).
+- v1.4.0 full-history paging and filter reset: [browser check](../evidence/v1.4-audit-history-check.md).
+- Test/demo database separation: [configuration review](../evidence/test-demo-isolation-review.md).
+- Latest full automated run: [`test-results.txt`](../evidence/test-results.txt), 28 passed.
+- Live comparison notes that informed the v1.5.0 UI: [`COMPETITOR_REVIEW.md`](COMPETITOR_REVIEW.md).
 
 ## Demo script
 

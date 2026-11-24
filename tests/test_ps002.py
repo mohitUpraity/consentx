@@ -13,6 +13,7 @@ class PS002LifecycleTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.db_path = Path(self.temp.name) / "consentx-test.sqlite3"
+        self.original_testing = consentx.app.config.get("TESTING", False)
         self.db_patch = patch.object(consentx, "DB_PATH", self.db_path)
         self.db_patch.start()
         consentx.init_db()
@@ -21,6 +22,7 @@ class PS002LifecycleTests(unittest.TestCase):
 
     def tearDown(self):
         self.db_patch.stop()
+        consentx.app.config.update(TESTING=self.original_testing)
         self.temp.cleanup()
 
     def consent(self, purpose="P1", action="grant", user="student-001"):
@@ -172,7 +174,7 @@ class PS002LifecycleTests(unittest.TestCase):
         response = self.client.get("/")
         body = response.get_data(as_text=True)
         self.assertEqual(response.status_code, 200)
-        self.assertIn(f"CONSENTX v{consentx.APP_VERSION}", body)
+        self.assertIn(f"ConsentX v{consentx.APP_VERSION}", body)
         self.assertIn('id="purpose-list"', body)
         catalog = self.client.get("/api/state").get_json()["purposes"]
         for purpose in ("Event reminders", "Personalized event suggestions", "Anonymous usage analytics"):
@@ -221,6 +223,39 @@ class PS002LifecycleTests(unittest.TestCase):
         self.assertEqual(csv_response.status_code, 200)
         self.assertEqual(len(csv_rows), len(json_rows))
         self.assertEqual({row["purpose_id"] for row in csv_rows}, {"P1"})
+
+    def test_25_test_fixture_isolated_from_demo_database(self):
+        self.assertTrue(consentx.app.testing)
+        self.assertEqual(consentx.DB_PATH, self.db_path)
+        self.assertNotEqual(consentx.DB_PATH, consentx.INSTANCE / "consentx.sqlite3")
+
+    def test_26_allow_response_explains_every_policy_check(self):
+        self.consent("P1")
+        response = self.access("P1")
+        body = response.get_json()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(body["decision"], "ALLOW")
+        self.assertEqual([step["status"] for step in body["decision_trace"]],
+                         ["PASS", "PASS", "PASS", "PASS", "RELEASED"])
+        self.assertTrue(body["payload"])
+
+    def test_27_withdrawal_trace_shows_why_payload_was_withheld(self):
+        self.consent("P1")
+        self.consent("P1", "withdraw")
+        response = self.access("P1")
+        body = response.get_json()
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(body["decision"], "DENY")
+        self.assertIsNone(body["payload"])
+        self.assertEqual(body["decision_trace"][2]["status"], "FAIL")
+        self.assertEqual(body["decision_trace"][-1]["status"], "WITHHELD")
+
+    def test_28_notice_history_is_newest_first_and_hash_linked(self):
+        self.publish_v2()
+        state = self.client.get("/api/state").get_json()
+        versions = state["notice_history"]
+        self.assertEqual([item["version"] for item in versions], ["2.0", "1.0"])
+        self.assertEqual(versions[0]["sha256"], state["active_notice"]["sha256"])
 
 
 if __name__ == "__main__":

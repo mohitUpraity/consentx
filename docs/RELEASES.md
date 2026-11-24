@@ -25,3 +25,18 @@
 - Expanded audit timeline rows to show event kind, synthetic user, purpose, action/decision, reason/details, notice version/hash, timestamp, and event ID.
 - Kept existing filter and export behavior; each visible row can now be matched to its exported record.
 - Status: verified; all 24 automated tests pass and browser confirms the expanded timeline fields. Saved screenshot and recorded demo remain pending. See `evidence/v1.3-audit-timeline-check.md`.
+
+## 1.4.0 — Full audit history
+
+- Added an event count and progressive **Load older events** control so the interface can expose the complete filtered audit history, 12 rows at a time.
+- Changing user, purpose, or decision filters resets the visible window to the newest 12 matching events; export links continue to use the active filters.
+- Status: verified; the v1.4.0 baseline's 25-case suite passed and browser confirmed full-history paging, filter reset, the end-of-history state, and filtered export URLs. The current suite has 28 cases. See `evidence/v1.4-audit-history-check.md`.
+
+## 1.5.0 — Judge-facing control center
+
+- Reorganized the UI into five navigable views: Dashboard, Consent Management, Data Access Simulator, Notice Versions, and Audit & Tests.
+- Added a dashboard with live counts, three purpose states, active notice digest, and the request-time policy order.
+- Added a server-generated decision trace that explains each policy check and shows when the synthetic payload is released or withheld.
+- Added newest-first notice history and an editable revision flow that chooses the next version and warns that old grants become stale.
+- Added tests for allow/deny traces and notice-history ordering; the current 28-case suite passes.
+- Status: automated verification passed. A screenshot and recorded clean-start walkthrough remain open evidence items.

@@ -150,6 +150,9 @@ def state():
         return jsonify({"error": "Unknown synthetic user", "reason_code": "UNKNOWN_USER"}), 400
     with db_session() as con:
         notice = active_notice(con)
+        notice_history = [dict(row) for row in con.execute(
+            "SELECT version,text,sha256,created_at FROM notices ORDER BY rowid DESC"
+        ).fetchall()]
         statuses = {}
         for purpose_id in PURPOSES:
             row = con.execute(
@@ -159,7 +162,7 @@ def state():
             ).fetchone()
             statuses[purpose_id] = dict(row) if row else None
         return jsonify({"user_id": user_id, "purposes": PURPOSES, "consents": statuses,
-                        "active_notice": dict(notice)})
+                        "active_notice": dict(notice), "notice_history": notice_history})
 
 
 @app.post("/api/consent")
@@ -215,9 +218,29 @@ def data_access():
             reason = "ACTIVE_CONSENT"
         decision = "ALLOW" if reason == "ACTIVE_CONSENT" else "DENY"
         audit_decision(con, user_id, purpose_id, decision, reason, notice)
+        consent_check = "PASS" if event is not None and event["action"] == "grant" else "FAIL"
+        notice_check = (
+            "PASS" if event is not None
+            and event["action"] == "grant"
+            and event["notice_version"] == notice["version"]
+            and event["notice_hash"] == notice["sha256"]
+            else ("FAIL" if event is not None and event["action"] == "grant" else "SKIPPED")
+        )
         result = {"request_id": con.execute("SELECT request_id FROM access_decisions ORDER BY id DESC LIMIT 1").fetchone()[0],
                   "decision": decision, "reason_code": reason,
-                  "payload": PURPOSES[purpose_id]["payload"] if decision == "ALLOW" else None}
+                  "payload": PURPOSES[purpose_id]["payload"] if decision == "ALLOW" else None,
+                  "decision_trace": [
+                      {"check": "Synthetic user", "status": "PASS", "detail": "Known demo identity."},
+                      {"check": "Purpose boundary", "status": "PASS", "detail": f"Request is scoped to {purpose_id}."},
+                      {"check": "Latest consent", "status": consent_check,
+                       "detail": "Latest event is a grant." if consent_check == "PASS" else
+                                 ("Latest event is a withdrawal." if event is not None else "No consent event exists." )},
+                      {"check": "Current notice", "status": notice_check,
+                       "detail": f"Consent and active notice are both v{notice['version']}." if notice_check == "PASS" else
+                                 (f"Consent is tied to an older notice; current version is v{notice['version']}." if notice_check == "FAIL" else "Not checked because there is no current grant.")},
+                      {"check": "Payload release", "status": "RELEASED" if decision == "ALLOW" else "WITHHELD",
+                       "detail": "Purpose-scoped synthetic fields only." if decision == "ALLOW" else "No protected payload returned."},
+                  ]}
     return jsonify(result), 200 if decision == "ALLOW" else 403
 
 

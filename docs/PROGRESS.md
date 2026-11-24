@@ -4,13 +4,13 @@ Last reviewed: 2026-11-24. This page tracks ConsentX implementation and its own 
 
 ## Overall
 
-- Stage: v1.3.0 audit detail timeline implemented and verified; next major PS-002 workstream remains in progress
-- Version: **1.3.0** (24 automated tests pass; timeline fields confirmed in browser)
+- Stage: v1.5.0 judge-facing control center implemented; PS-002 demo/evidence completion remains in progress
+- Version: **1.5.0** (28 automated tests pass; decision trace and notice history verified)
 - Mandatory requirements complete: **7 / 11**
-- Tasks complete: **11 / 25** (11 in progress)
+- Tasks complete: **13 / 26** (10 in progress)
 - Evidence items captured: **8 / 11** (R-02 has API/browser evidence but still needs a saved UI screenshot; recorded demo and submission proof remain open)
-- Lifecycle tests passing: **24 / 12 required** (full suite rerun for v1.3.0)
-- Test procedures: v1.2.0 lifecycle/filter browser checks passed; v1.3.0 audit detail rendering confirmed in browser; screenshot capture remains pending
+- Lifecycle tests passing: **28 / 12 required** (current suite rerun after decision-trace and notice-history additions)
+- Test procedures: lifecycle/filter checks, audit detail rendering, and full-history paging are browser verified; v1.5.0 dashboard, notice history, and decision trace are implemented and API-tested; current UI screenshot and recorded demo remain pending
 - Major PS-002 workstreams: tracked in the summary table at the top of `docs/TASKS.md`
 - Demo: lifecycle verified in isolated browser run and API evidence saved; screen recording and final rehearsal remain
 
@@ -24,10 +24,10 @@ These counts change only when implementation exists and its proof is recorded. A
 | R-02 Exactly three purposes | In progress | API state capture and browser observation; saved UI screenshot still needed |
 | R-03 Grant/withdraw records | Done | `evidence/manual-lifecycle-audit.json` preserves grant and withdrawal records |
 | R-04 Notice version/hash | Done | `evidence/manual-lifecycle-responses.json`; suite verifies hash and stale grants |
-| R-05 Mock API enforcement | Done | Captured allow/deny responses and 24 passing lifecycle tests |
+| R-05 Mock API enforcement | Done | Captured allow/deny responses and 28 passing lifecycle tests, including decision-trace checks |
 | R-06 Withdrawal denial | Done | Captured withdrawal/next-request denial and purpose-isolation test |
 | R-07 Audit/export | Done | Matching JSON/CSV exports and filtered export files captured |
-| R-08 12+ passing tests | Done | `evidence/test-results.txt` (24 passed) |
+| R-08 12+ passing tests | Done | `evidence/test-results.txt` (28 passed) |
 | R-09 Demo flow | In progress | Full sequence exercised and logged; required recording remains pending |
 | R-10 Pseudocode | Done | `docs/DEMO_PSEUDOCODE.md` reviewed against `app.py` and lifecycle evidence |
 | R-11 Submission materials | Not started | — |
