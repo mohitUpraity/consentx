@@ -31,12 +31,27 @@ async function refresh() {
 }
 
 async function refreshAudit() {
-  const {data} = await api("/api/audit?format=json");
+  const filters = new URLSearchParams();
+  for (const [key, selector] of [["user_id", "#audit-user"], ["purpose_id", "#audit-purpose"], ["decision", "#audit-decision"]]) {
+    const value = $(selector)?.value; if (value) filters.set(key, value);
+  }
+  const suffix = filters.toString();
+  const {data} = await api(`/api/audit?format=json${suffix ? `&${suffix}` : ""}`);
+  const jsonExport = $("#export-json");
+  const csvExport = $("#export-csv");
+  if (jsonExport) jsonExport.href = `/api/audit?format=json${suffix ? `&${suffix}` : ""}`;
+  if (csvExport) csvExport.href = `/api/audit?format=csv${suffix ? `&${suffix}` : ""}`;
   const rows = data.slice(-12).reverse();
-  $("#audit-list").innerHTML = rows.length ? rows.map(r => `<div class="audit-row"><span>${esc(r.record_type)} · ${esc(r.purpose_id)}</span><span class="decision ${r.result === "ALLOW" ? "ALLOW" : r.result === "DENY" ? "DENY" : ""}">${esc(r.result)}${r.record_type === "access" ? ` · ${esc(r.reason_code)}` : ""}</span><time>${esc(r.created_at)}</time></div>`).join("") : `<p class="muted">No events yet. Grant consent or send a mock request to begin.</p>`;
+  const auditList = $("#audit-list");
+  if (auditList) {
+    auditList.innerHTML = rows.length ? rows.map(r => `<div class="audit-row"><span>${esc(r.record_type)} · ${esc(r.purpose_id)}</span><span class="decision ${r.result === "ALLOW" ? "ALLOW" : r.result === "DENY" ? "DENY" : ""}">${esc(r.result)}${r.record_type === "access" ? ` · ${esc(r.reason_code)}` : ""}</span><time>${esc(r.created_at)}</time></div>`).join("") : `<p class="muted">No events yet. Grant consent or send a mock request to begin.</p>`;
+  }
 }
 
 $("#user-select").addEventListener("change", refresh);
+for (const selector of ["#audit-user", "#audit-purpose", "#audit-decision"]) {
+  $(selector)?.addEventListener("change", refreshAudit);
+}
 $("#purpose-list").addEventListener("click", async e => {
   const b = e.target.closest("button[data-purpose]"); if (!b) return;
   b.disabled = true;

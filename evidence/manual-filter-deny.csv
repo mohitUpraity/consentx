@@ -1,0 +1,2 @@
+record_type,record_id,user_id,purpose_id,result,reason_code,created_at,notice_version,notice_hash
+access,134b2030-7935-4ef0-941a-dcaf8fb07f44,student-002,P2,DENY,CONSENT_WITHDRAWN,2026-11-24T13:13:22Z,2.0,664b31ff6208ff0c7127898ae08ff101b4e6afe61b3e0dc4701e1218a0605647

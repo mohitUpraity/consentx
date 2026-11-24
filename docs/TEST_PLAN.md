@@ -1,6 +1,6 @@
 # Feature Test Plan
 
-This plan turns each PS-002 requirement into reproducible checks. It is **not** a test result. No ConsentX tests have been run yet. Do not mark a requirement Done until the automated check passes and its output is saved in `evidence/`.
+This plan turns each PS-002 requirement into reproducible checks. It is **not** itself a test result. The 24-case automated suite passed on 2026-11-24; see `evidence/test-results.txt`. The main lifecycle and audit filters have also been exercised in the browser on an isolated database; saved screenshots/video and a few remaining UI checks are pending. See [WALKTHROUGH.md](WALKTHROUGH.md) for plain-language explanations and presenter notes.
 
 ## What PS-002 failure each feature addresses
 
@@ -65,7 +65,7 @@ Do not run a case against a database already used by a previous run unless the c
 
 ## Automated lifecycle/enforcement cases
 
-The current suite contains 19 independent automated cases. Tests call the Flask test client against a temporary database and assert HTTP status and response fields. Keep them repeatable without relying on order.
+The current suite contains 24 independent automated cases. Tests call the Flask test client against a temporary database and assert HTTP status and response fields. Keep them repeatable without relying on order.
 
 | Test | Setup/action | Expected result |
 |---|---|---|
@@ -87,10 +87,20 @@ The current suite contains 19 independent automated cases. Tests call the Flask 
 | T-16 Notice hash is reproducible | Read active notice; independently SHA-256 its exact UTF-8 text | Recomputed digest equals `sha256` returned by state/consent API. |
 | T-17 CSV export shape | `GET /api/audit?format=csv` after T-14 | 200 `text/csv`; header and row count match JSON export, including notice publication. |
 | T-18 Input validation | Try invalid action, missing version/text for notice, and malformed JSON | 4xx response; no consent grant or payload is created. Record each exact observed result. |
+| T-19 UI baseline | `GET /` | 200; HTML contains app version and three purpose identifiers. |
+| T-20 User audit filter | Create events for both demo users; request `user_id=student-001` | Every returned row belongs to student-001. |
+| T-21 Purpose audit filter | Create P1 and P2 events; request `purpose_id=P2` | Every returned row is for P2. |
+| T-22 Decision audit filter | Create allowed and denied requests; request `decision=ALLOW` | Only ALLOW access-decision rows are returned. |
+| T-23 Invalid audit filters | Try unknown user, purpose and decision values | Each returns 400 with a stable reason code. |
+| T-24 Filtered CSV consistency | Filter by P1 and fetch JSON and CSV | Same row count and purpose in both exports. |
 
-**Verification note:** T-046 now writes audit rows for unknown users and purposes. Keep R-07 in progress until automated checks confirm both rejection rows appear in JSON/CSV exports.
+**Verification note:** T-046 writes audit rows for unknown users and purposes; T-12/T-13 assert those rows. Full and filtered JSON/CSV outputs from the current manual run are saved under `evidence/`. Keep R-07 complete only while those artifacts and automated checks remain valid.
+
+**v1.2.0 verification:** Automated cases T-20–T-24 cover API filters and filtered exports. Browser interaction for user, purpose, and ALLOW/DENY filters was exercised on 2026-11-24; the run log and filtered export outputs are under `evidence/`. A saved filtered-screen screenshot and clicking the UI download links remain pending.
 
 ## Manual UI checks
+
+For click-by-click steps and what to say while demonstrating each feature, use [WALKTHROUGH.md](WALKTHROUGH.md).
 
 | Manual ID | Steps | Expected visible behavior |
 |---|---|---|
@@ -98,8 +108,9 @@ The current suite contains 19 independent automated cases. Tests call the Flask 
 | M-02 | Grant P1 only; try P2 and P3 in consumer panel; then grant P2 and retry. | P2/P3 denied before their own grants; P2 allowed after grant; P1 state is unchanged. |
 | M-03 | Refresh browser after grant/withdraw. | UI reloads state from database and shows the latest event, not a client-only toggle. |
 | M-04 | Use JSON and CSV export links after M-01. | Both contain the same consent/access sequence and notice references. |
+| M-05 | Filter audit by user, purpose and ALLOW/DENY; export each filtered view as JSON and CSV. | Displayed rows and both exports match the selected filters; invalid filter values return a clear 4xx response. |
 
-Save screenshots or a short screen recording for M-01 and M-02, and save JSON/CSV files for M-04. Redact nothing from synthetic evidence; never put real personal data or secrets in the captures.
+M-01 lifecycle was exercised on 2026-11-24 and its API/audit outputs are saved in `evidence/`; a screenshot/video is still needed. M-02 P1 authorization isolation from P2 and P3 was exercised; see `evidence/manual-p3-deny.json`. M-03 persistence after refresh was observed. M-05 user/purpose/decision filters were exercised and filtered JSON/CSV responses were saved; screenshot remains. For M-04, clicking the export links in connected Chrome was blocked with `ERR_BLOCKED_BY_CLIENT`; the live endpoints were fetched directly and both returned HTTP 200 with matching row counts (`evidence/live-export-ui-check.*`). Repeat the click in the user's regular browser if download behavior needs separate confirmation. Use synthetic evidence only; never put real personal data or secrets in captures.
 
 ## Pseudocode/manual API review
 

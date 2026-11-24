@@ -21,8 +21,13 @@ test_16_csv_export_matches_json_row_count (test_ps002.PS002LifecycleTests.test_1
 test_17_notice_hash_recomputes_from_exact_text (test_ps002.PS002LifecycleTests.test_17_notice_hash_recomputes_from_exact_text) ... ok
 test_18_invalid_consent_action_rejected_without_event (test_ps002.PS002LifecycleTests.test_18_invalid_consent_action_rejected_without_event) ... ok
 test_19_ui_renders_version_and_three_purposes (test_ps002.PS002LifecycleTests.test_19_ui_renders_version_and_three_purposes) ... ok
+test_20_audit_filters_by_synthetic_user (test_ps002.PS002LifecycleTests.test_20_audit_filters_by_synthetic_user) ... ok
+test_21_audit_filters_by_purpose (test_ps002.PS002LifecycleTests.test_21_audit_filters_by_purpose) ... ok
+test_22_decision_filter_returns_access_decisions_only (test_ps002.PS002LifecycleTests.test_22_decision_filter_returns_access_decisions_only) ... ok
+test_23_invalid_audit_filters_return_400 (test_ps002.PS002LifecycleTests.test_23_invalid_audit_filters_return_400) ... ok
+test_24_filtered_csv_matches_filtered_json (test_ps002.PS002LifecycleTests.test_24_filtered_csv_matches_filtered_json) ... ok
 
 ----------------------------------------------------------------------
-Ran 19 tests in 0.357s
+Ran 24 tests in 0.514s
 
 OK

@@ -172,7 +172,7 @@ def consent():
         return jsonify({"error": "Unknown purpose", "reason_code": "INVALID_PURPOSE"}), 400
     if action not in ("grant", "withdraw"):
         return jsonify({"error": "Action must be grant or withdraw", "reason_code": "INVALID_ACTION"}), 400
-    with get_db() as con:
+    with db_session() as con:
         notice = active_notice(con)
         con.execute(
             "INSERT INTO consent_events(event_id,user_id,purpose_id,action,notice_version,notice_hash,created_at) "
@@ -245,14 +245,35 @@ def audit_export():
     fmt = request.args.get("format", "json").lower()
     if fmt not in ("json", "csv"):
         return jsonify({"error": "format must be json or csv"}), 400
+    user_filter = request.args.get("user_id", "").strip()
+    purpose_filter = request.args.get("purpose_id", "").strip()
+    decision_filter = request.args.get("decision", "").strip().upper()
+    if user_filter and user_filter not in DEMO_USERS:
+        return jsonify({"error": "Unknown synthetic user", "reason_code": "UNKNOWN_USER"}), 400
+    if purpose_filter and purpose_filter not in PURPOSES:
+        return jsonify({"error": "Unknown purpose", "reason_code": "INVALID_PURPOSE"}), 400
+    if decision_filter and decision_filter not in ("ALLOW", "DENY"):
+        return jsonify({"error": "decision must be ALLOW or DENY", "reason_code": "INVALID_DECISION"}), 400
     with db_session() as con:
-        rows = [dict(r) for r in con.execute(
+        query = (
             "SELECT * FROM (SELECT 'consent' AS record_type,event_id AS record_id,user_id,purpose_id,action AS result,"
             "action AS reason_code,created_at,notice_version,notice_hash FROM consent_events "
             "UNION ALL SELECT 'access',request_id,user_id,purpose_id,decision,reason_code,created_at,notice_version,notice_hash "
             "FROM access_decisions UNION ALL SELECT 'system',event_id,'system','SYSTEM',event_type,details,created_at,"
-            "notice_version,notice_hash FROM system_events) ORDER BY created_at"
-        ).fetchall()]
+            "notice_version,notice_hash FROM system_events) WHERE 1=1"
+        )
+        params = []
+        if user_filter:
+            query += " AND user_id=?"
+            params.append(user_filter)
+        if purpose_filter:
+            query += " AND purpose_id=?"
+            params.append(purpose_filter)
+        if decision_filter:
+            query += " AND record_type='access' AND result=?"
+            params.append(decision_filter)
+        query += " ORDER BY created_at, record_id"
+        rows = [dict(r) for r in con.execute(query, params).fetchall()]
     if fmt == "json":
         return Response(json.dumps(rows, indent=2), mimetype="application/json",
                         headers={"Content-Disposition": "attachment; filename=consentx-audit.json"})

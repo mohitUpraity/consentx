@@ -1,0 +1,7 @@
+{
+  "http_status": 403,
+  "decision": "DENY",
+  "payload": null,
+  "reason_code": "NO_ACTIVE_CONSENT",
+  "request_id": "77461b3d-0c7a-4db1-b406-78adec8b87d1"
+}

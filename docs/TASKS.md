@@ -11,12 +11,12 @@ This is the top-level view of the challenge deliverables. The detailed tasks bel
 | A. Synthetic service, users and exactly three purposes | R-01, R-02 | T-001, T-010, T-011, T-020, T-030 | In progress | UI/API expose CampusPulse, two synthetic users and only P1–P3; automated exact-catalog test passes. |
 | B. Purpose-specific grant/withdraw and notice version/hash | R-03, R-04 | T-010–T-013, T-020, T-030 | In progress | Append-only grant/withdraw records include purpose, UTC timestamp and active notice version/hash; notice hash independently verified. |
 | C. Mock downstream consumer enforces current consent | R-05, R-06 | T-021–T-023, T-031 | In progress | API allows only matching current grants; missing, withdrawn, stale and unverifiable states deny with no payload. |
-| D. Audit records and export | R-07 | T-010, T-022, T-032, T-033, T-046, T-049 | In progress | Consent, all allow/deny decisions and notice publications appear in matching JSON/CSV exports; invalid user/purpose denials are audited. |
-| E. 12+ lifecycle/enforcement tests | R-08 | T-040, T-041, T-046 | Done | 19 tests pass against isolated temporary DBs; output saved at `evidence/test-results.txt`. |
+| D. Audit records and export | R-07 | T-010, T-022, T-032, T-033, T-046, T-049 | In progress | API exports captured and consistency checked; audit filters were exercised in browser; saved filtered-screen screenshot remains pending. |
+| E. 12+ lifecycle/enforcement tests | R-08 | T-040, T-041, T-046 | Done | 24 tests pass against isolated temporary DBs; output saved at `evidence/test-results.txt`. |
 | F. Required demo and pseudocode | R-09, R-10 | T-031, T-042–T-044 | In progress | Recorded grant → allow → withdraw → deny → notice change → stale deny → re-consent flow; pseudocode matches code. |
 | G. Hackathon submission items | R-11 | T-045 | Not started | Private repo/collaboration steps, required structure PDF and mentor demo are ready. |
 
-**Current overall state:** no major workstream is complete yet. UI and initial API code exist, but their runtime behavior and evidence are not verified. Update this table together with the detailed task checkboxes and `PROGRESS.md`.
+**Current overall state:** Workstream E (automated lifecycle/enforcement tests) is complete. Other workstreams remain in progress or not started because full acceptance proof is pending. Update this table together with detailed task checkboxes and `PROGRESS.md`.
 
 ## M0 — Define and baseline
 
@@ -42,24 +42,28 @@ This is the top-level view of the challenge deliverables. The detailed tasks bel
 
 - [/] T-030 Build consent screen with three independent purpose controls and notice version/hash context (R-02–R-04). User screenshot confirms styled screen; interaction proof pending.
 - [/] T-031 Build mock consumer panel showing request, decision, reason and payload/no-payload result (R-05, R-06, R-09). UI exists; full walkthrough pending.
-- [/] T-032 Build readable audit timeline with filters for user, purpose and decision (R-07). UI exists; verify data behavior and filters.
-- [/] T-033 Implement JSON and CSV audit exports with stable fields/timestamps (R-07). Links exist; save and validate actual exports.
+- [/] T-032 Build readable audit timeline with filters for user, purpose and decision (R-07). API and browser filter checks pass; saved screen capture remains pending. Chrome blocked the export-link click (`ERR_BLOCKED_BY_CLIENT`) although the live export endpoints return valid files. Null-safe optional filter binding fixed and verified after server restart.
+- [x] T-033 Implement JSON and CSV audit exports with stable fields/timestamps (R-07). Proof: `evidence/manual-lifecycle-audit.json`, `evidence/manual-lifecycle-audit.csv`; automated shape and row-count checks pass.
 
 ## M4 — Verification and demo
 
-- [x] T-040 Implement at least 12 distinct lifecycle/enforcement tests (R-08). Proof: 19 cases in `tests/test_ps002.py`, mapped in `docs/TEST_PLAN.md`.
-- [x] T-041 Run tests on isolated temporary databases; fix failures; save exact command/output and date (R-08). Proof: `evidence/test-results.txt` (19 passed).
-- [ ] T-042 Capture allow, withdrawal, deny, notice-change, stale-deny and re-consent evidence (R-03–R-09). Proof: `evidence/` files referenced by the evidence index.
-- [ ] T-043 Write pseudocode that mirrors the final enforcement code (R-10). Proof: `DEMO_PSEUDOCODE.md` reviewed against implementation.
+- [x] T-040 Implement at least 12 distinct lifecycle/enforcement tests (R-08). Proof: 24 cases in `tests/test_ps002.py`, mapped in `docs/TEST_PLAN.md`.
+- [x] T-041 Run tests on isolated temporary databases; fix failures; save exact command/output and date (R-08). Proof: `evidence/test-results.txt` (24 passed).
+- [x] T-042 Capture allow, withdrawal, deny, notice-change, stale-deny and re-consent evidence (R-03–R-09). Proof: `evidence/manual-lifecycle-responses.json`, `evidence/manual-lifecycle-audit.json`, and `evidence/manual-walkthrough-2026-11-24.md`.
+- [x] T-043 Write pseudocode that mirrors the final enforcement code (R-10). Proof: `docs/DEMO_PSEUDOCODE.md` reviewed against `app.py` and verified lifecycle evidence.
 - [ ] T-044 Rehearse and record a clean-start demo; verify exported audit trail matches the screen flow (R-09). Proof: demo artifact and evidence checklist.
 - [ ] T-045 Complete private repository, collaboration, PDF and mentor-demo submission checklist (R-11). Proof: checklist in evidence index.
 - [x] T-046 Log every rejected access decision, including unknown user/purpose requests, so audit behavior matches R-07. Proof: tests T-12/T-13 assert denial audit rows.
-- [x] T-047 Write feature-by-feature verification procedures and expected results. Proof: `docs/TEST_PLAN.md` (this documents the plan; it does not mean tests have passed).
+- [x] T-047 Write feature-by-feature verification procedures, expected results, plain-language explanations, and demo notes. Proof: `docs/TEST_PLAN.md` and `docs/WALKTHROUGH.md` (manual UI checks are still pending).
 - [x] T-049 Record notice publication as a system audit event and include it in JSON/CSV exports. Proof: T-10/T-14/T-16 verify notice event and export contents.
 
 ## Next PS-002 verification checkpoint
 
-At this checkpoint, the automated suite has been run against the features built so far. Remaining manual UI walkthrough and saved demo/export artifacts are still open; rerun the full suite after the next code change and complete those manual proofs before marking the related requirements Done.
+At this checkpoint, the automated suite has been rerun against features built through v1.2.0. Remaining manual UI walkthrough and saved demo/export artifacts are still open; rerun the full suite after the next code change and complete those manual proofs before marking related requirements Done.
+
+## Documentation rule for each update
+
+Every feature update must add or revise its entry in `docs/WALKTHROUGH.md`: purpose in plain language, PS-002 requirement, preconditions, exact steps, expected result, a negative check, demo explanation, and proof status. Keep `TEST_PLAN.md`, this tracker, `RELEASES.md`, and `PROGRESS.md` aligned. Automated pass status never substitutes for pending browser or export evidence.
 
 ## Suggested order
 

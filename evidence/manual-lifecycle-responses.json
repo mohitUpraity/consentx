@@ -1,0 +1,306 @@
+{
+  "health_body": {
+    "http_status": 200,
+    "body": {
+      "service": "ConsentX synthetic demo",
+      "status": "ok",
+      "version": "1.2.0"
+    }
+  },
+  "health": {
+    "http_status": 200,
+    "body": {
+      "service": "ConsentX synthetic demo",
+      "status": "ok",
+      "version": "1.2.0"
+    }
+  },
+  "initial_state": {
+    "http_status": 200,
+    "body": {
+      "active_notice": {
+        "created_at": "2026-11-24T13:15:59Z",
+        "sha256": "ca72e4bed04e65133974a3ae398d38205d29209b41ea37bb03e88c4ecd513011",
+        "text": "CampusPulse uses data only for the selected purpose. You can withdraw consent at any time. A new notice version may require you to confirm your choices again.",
+        "version": "1.0"
+      },
+      "consents": {
+        "P1": null,
+        "P2": null,
+        "P3": null
+      },
+      "purposes": {
+        "P1": {
+          "description": "Send reminders for events the user saved.",
+          "name": "Event reminders",
+          "payload": {
+            "channel": "email",
+            "upcoming_event_ids": [
+              "EVT-104",
+              "EVT-208"
+            ]
+          }
+        },
+        "P2": {
+          "description": "Use synthetic interests to suggest campus events.",
+          "name": "Personalized event suggestions",
+          "payload": {
+            "suggested_event_ids": [
+              "EVT-311"
+            ],
+            "synthetic_interests": [
+              "design",
+              "robotics"
+            ]
+          }
+        },
+        "P3": {
+          "description": "Use aggregated synthetic feature-use counts to improve CampusPulse.",
+          "name": "Anonymous usage analytics",
+          "payload": {
+            "aggregation": "synthetic-demo",
+            "feature_use_counts": {
+              "calendar": 9,
+              "search": 18
+            }
+          }
+        }
+      },
+      "user_id": "student-001"
+    }
+  },
+  "grant_v1": {
+    "http_status": 201,
+    "body": {
+      "action": "grant",
+      "notice_hash": "ca72e4bed04e65133974a3ae398d38205d29209b41ea37bb03e88c4ecd513011",
+      "notice_version": "1.0",
+      "purpose_id": "P1",
+      "recorded": true,
+      "user_id": "student-001"
+    }
+  },
+  "allow_p1_v1": {
+    "http_status": 200,
+    "body": {
+      "decision": "ALLOW",
+      "payload": {
+        "channel": "email",
+        "upcoming_event_ids": [
+          "EVT-104",
+          "EVT-208"
+        ]
+      },
+      "reason_code": "ACTIVE_CONSENT",
+      "request_id": "31ba4e52-23de-463b-bddd-196cae060030"
+    }
+  },
+  "deny_ungranted_p2": {
+    "http_status": 403,
+    "body": {
+      "decision": "DENY",
+      "payload": null,
+      "reason_code": "NO_ACTIVE_CONSENT",
+      "request_id": "b4ba4be7-6be2-4a33-af0c-4c6bb15585db"
+    }
+  },
+  "withdraw_p1": {
+    "http_status": 201,
+    "body": {
+      "action": "withdraw",
+      "notice_hash": "ca72e4bed04e65133974a3ae398d38205d29209b41ea37bb03e88c4ecd513011",
+      "notice_version": "1.0",
+      "purpose_id": "P1",
+      "recorded": true,
+      "user_id": "student-001"
+    }
+  },
+  "deny_after_withdrawal": {
+    "http_status": 403,
+    "body": {
+      "decision": "DENY",
+      "payload": null,
+      "reason_code": "CONSENT_WITHDRAWN",
+      "request_id": "4e51a384-dee7-4263-8e89-81e70e3dc07f"
+    }
+  },
+  "regrant_p1_v1": {
+    "http_status": 201,
+    "body": {
+      "action": "grant",
+      "notice_hash": "ca72e4bed04e65133974a3ae398d38205d29209b41ea37bb03e88c4ecd513011",
+      "notice_version": "1.0",
+      "purpose_id": "P1",
+      "recorded": true,
+      "user_id": "student-001"
+    }
+  },
+  "publish_notice_v2": {
+    "http_status": 201,
+    "body": {
+      "sha256": "664b31ff6208ff0c7127898ae08ff101b4e6afe61b3e0dc4701e1218a0605647",
+      "version": "2.0"
+    }
+  },
+  "deny_stale_v1_grant": {
+    "http_status": 403,
+    "body": {
+      "decision": "DENY",
+      "payload": null,
+      "reason_code": "NOTICE_MISMATCH",
+      "request_id": "f1415073-7f88-453b-95a1-284c76c7b3a5"
+    }
+  },
+  "reconsent_under_v2": {
+    "http_status": 201,
+    "body": {
+      "action": "grant",
+      "notice_hash": "664b31ff6208ff0c7127898ae08ff101b4e6afe61b3e0dc4701e1218a0605647",
+      "notice_version": "2.0",
+      "purpose_id": "P1",
+      "recorded": true,
+      "user_id": "student-001"
+    }
+  },
+  "allow_after_reconsent": {
+    "http_status": 200,
+    "body": {
+      "decision": "ALLOW",
+      "payload": {
+        "channel": "email",
+        "upcoming_event_ids": [
+          "EVT-104",
+          "EVT-208"
+        ]
+      },
+      "reason_code": "ACTIVE_CONSENT",
+      "request_id": "44807b7f-3a2f-40af-8557-b77b8aae609d"
+    }
+  },
+  "final_state_body": {
+    "http_status": 200,
+    "body": {
+      "active_notice": {
+        "created_at": "2026-11-24T13:15:59Z",
+        "sha256": "664b31ff6208ff0c7127898ae08ff101b4e6afe61b3e0dc4701e1218a0605647",
+        "text": "CampusPulse notice v2: updated event-data purposes. Review the current notice and confirm each purpose again before data is shared.",
+        "version": "2.0"
+      },
+      "consents": {
+        "P1": {
+          "action": "grant",
+          "created_at": "2026-11-24T13:15:59Z",
+          "notice_hash": "664b31ff6208ff0c7127898ae08ff101b4e6afe61b3e0dc4701e1218a0605647",
+          "notice_version": "2.0"
+        },
+        "P2": null,
+        "P3": null
+      },
+      "purposes": {
+        "P1": {
+          "description": "Send reminders for events the user saved.",
+          "name": "Event reminders",
+          "payload": {
+            "channel": "email",
+            "upcoming_event_ids": [
+              "EVT-104",
+              "EVT-208"
+            ]
+          }
+        },
+        "P2": {
+          "description": "Use synthetic interests to suggest campus events.",
+          "name": "Personalized event suggestions",
+          "payload": {
+            "suggested_event_ids": [
+              "EVT-311"
+            ],
+            "synthetic_interests": [
+              "design",
+              "robotics"
+            ]
+          }
+        },
+        "P3": {
+          "description": "Use aggregated synthetic feature-use counts to improve CampusPulse.",
+          "name": "Anonymous usage analytics",
+          "payload": {
+            "aggregation": "synthetic-demo",
+            "feature_use_counts": {
+              "calendar": 9,
+              "search": 18
+            }
+          }
+        }
+      },
+      "user_id": "student-001"
+    }
+  },
+  "final_state": {
+    "http_status": 200,
+    "body": {
+      "active_notice": {
+        "created_at": "2026-11-24T13:15:59Z",
+        "sha256": "664b31ff6208ff0c7127898ae08ff101b4e6afe61b3e0dc4701e1218a0605647",
+        "text": "CampusPulse notice v2: updated event-data purposes. Review the current notice and confirm each purpose again before data is shared.",
+        "version": "2.0"
+      },
+      "consents": {
+        "P1": {
+          "action": "grant",
+          "created_at": "2026-11-24T13:15:59Z",
+          "notice_hash": "664b31ff6208ff0c7127898ae08ff101b4e6afe61b3e0dc4701e1218a0605647",
+          "notice_version": "2.0"
+        },
+        "P2": null,
+        "P3": null
+      },
+      "purposes": {
+        "P1": {
+          "description": "Send reminders for events the user saved.",
+          "name": "Event reminders",
+          "payload": {
+            "channel": "email",
+            "upcoming_event_ids": [
+              "EVT-104",
+              "EVT-208"
+            ]
+          }
+        },
+        "P2": {
+          "description": "Use synthetic interests to suggest campus events.",
+          "name": "Personalized event suggestions",
+          "payload": {
+            "suggested_event_ids": [
+              "EVT-311"
+            ],
+            "synthetic_interests": [
+              "design",
+              "robotics"
+            ]
+          }
+        },
+        "P3": {
+          "description": "Use aggregated synthetic feature-use counts to improve CampusPulse.",
+          "name": "Anonymous usage analytics",
+          "payload": {
+            "aggregation": "synthetic-demo",
+            "feature_use_counts": {
+              "calendar": 9,
+              "search": 18
+            }
+          }
+        }
+      },
+      "user_id": "student-001"
+    }
+  },
+  "exports": {
+    "json_http_status": 200,
+    "csv_http_status": 200,
+    "json_rows": 10,
+    "csv_rows": 10,
+    "notice_publication_present": true,
+    "deny_responses_have_null_payload": true
+  }
+}

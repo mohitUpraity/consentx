@@ -2,7 +2,7 @@
 
 ConsentX is our PS-002 prototype: a synthetic service that records purpose-specific consent and enforces the latest consent state before a mock downstream API releases data.
 
-Current code baseline: **v1.0.0**. This is the first local demo slice, not a claim that PS-002 is complete.
+Current code baseline: **v1.2.0**. This is a local demo prototype, not a claim that PS-002 is complete.
 
 ## Project boundary
 
@@ -13,13 +13,14 @@ Current code baseline: **v1.0.0**. This is the first local demo slice, not a cla
 
 ## Current status
 
-**Planning — implementation not started.** See [progress](docs/PROGRESS.md) for the source of truth and [tasks](docs/TASKS.md) for the work queue.
+**v1.2.0 API/filter verification passed; manual browser walkthrough and demo evidence remain.** See [progress](docs/PROGRESS.md) for status and [tasks](docs/TASKS.md) for the work queue.
 
 ## Documents
 
 - [Requirements and acceptance criteria](docs/REQUIREMENTS.md)
 - [Task plan](docs/TASKS.md)
 - [Feature-by-feature test plan](docs/TEST_PLAN.md)
+- [Personal walkthrough, feature checks and demo script](docs/WALKTHROUGH.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Technology choices and alternatives](docs/TECH_STACK.md)
 - [Release notes](docs/RELEASES.md)

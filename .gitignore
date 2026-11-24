@@ -5,5 +5,7 @@ instance/*.sqlite3
 instance/*.db
 evidence/*.csv
 evidence/*.json
+!evidence/*.csv
+!evidence/*.json
 .DS_Store
 .env

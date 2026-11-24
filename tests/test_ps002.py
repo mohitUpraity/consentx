@@ -172,11 +172,55 @@ class PS002LifecycleTests(unittest.TestCase):
         response = self.client.get("/")
         body = response.get_data(as_text=True)
         self.assertEqual(response.status_code, 200)
-        self.assertIn("CONSENTX v1.1.0", body)
+        self.assertIn(f"CONSENTX v{consentx.APP_VERSION}", body)
         self.assertIn('id="purpose-list"', body)
         catalog = self.client.get("/api/state").get_json()["purposes"]
         for purpose in ("Event reminders", "Personalized event suggestions", "Anonymous usage analytics"):
             self.assertIn(purpose, [entry["name"] for entry in catalog.values()])
+
+    def test_20_audit_filters_by_synthetic_user(self):
+        self.consent(user="student-001")
+        self.access(user="student-001")
+        self.consent(user="student-002")
+        rows = self.client.get("/api/audit?format=json&user_id=student-001").get_json()
+        self.assertTrue(rows)
+        self.assertEqual({row["user_id"] for row in rows}, {"student-001"})
+
+    def test_21_audit_filters_by_purpose(self):
+        self.consent("P1")
+        self.consent("P2")
+        rows = self.client.get("/api/audit?format=json&purpose_id=P2").get_json()
+        self.assertTrue(rows)
+        self.assertEqual({row["purpose_id"] for row in rows}, {"P2"})
+
+    def test_22_decision_filter_returns_access_decisions_only(self):
+        self.consent("P1")
+        self.access("P1")
+        self.access("P2")
+        rows = self.client.get("/api/audit?format=json&decision=ALLOW").get_json()
+        self.assertTrue(rows)
+        self.assertTrue(all(row["record_type"] == "access" and row["result"] == "ALLOW" for row in rows))
+
+    def test_23_invalid_audit_filters_return_400(self):
+        for query, reason in (("user_id=unknown", "UNKNOWN_USER"),
+                              ("purpose_id=P9", "INVALID_PURPOSE"),
+                              ("decision=MAYBE", "INVALID_DECISION")):
+            with self.subTest(query=query):
+                response = self.client.get(f"/api/audit?format=json&{query}")
+                self.assertEqual(response.status_code, 400)
+                self.assertEqual(response.get_json()["reason_code"], reason)
+
+    def test_24_filtered_csv_matches_filtered_json(self):
+        self.consent("P1")
+        self.access("P1")
+        self.consent("P2")
+        query = "purpose_id=P1"
+        json_rows = self.client.get(f"/api/audit?format=json&{query}").get_json()
+        csv_response = self.client.get(f"/api/audit?format=csv&{query}")
+        csv_rows = list(csv.DictReader(io.StringIO(csv_response.get_data(as_text=True))))
+        self.assertEqual(csv_response.status_code, 200)
+        self.assertEqual(len(csv_rows), len(json_rows))
+        self.assertEqual({row["purpose_id"] for row in csv_rows}, {"P1"})
 
 
 if __name__ == "__main__":

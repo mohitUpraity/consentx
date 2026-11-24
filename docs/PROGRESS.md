@@ -4,15 +4,15 @@ Last reviewed: 2026-11-24. This page tracks ConsentX implementation and its own 
 
 ## Overall
 
-- Stage: v1.1.0 API/lifecycle verification checkpoint passed; manual demo evidence pending
-- Version: **1.1.0** (initial slice plus notice-publication audit event; pending verification)
-- Mandatory requirements complete: **1 / 11**
-- Tasks complete: **7 / 24** (12 in progress)
-- Evidence items captured: **1 / 11** (automated test report)
-- Lifecycle tests passing: **19 / 12 required**
-- Test procedures: written in `docs/TEST_PLAN.md`; 19 automated cases passed, manual browser walkthrough remains
+- Stage: v1.2.0 lifecycle and audit-filter browser walkthrough completed; JS/template startup mismatch fixed; screenshot/video evidence pending
+- Version: **1.2.0** (audit filters; browser lifecycle checkpoint exercised)
+- Mandatory requirements complete: **7 / 11**
+- Tasks complete: **10 / 24** (11 in progress)
+- Evidence items captured: **8 / 11** (R-02 has API/browser evidence but still needs a saved UI screenshot; recorded demo and submission proof remain open)
+- Lifecycle tests passing: **24 / 12 required**
+- Test procedures: 24 automated cases passed; lifecycle and audit filters exercised in the browser; the null-listener fix was verified after restarting the server with the current template; screen recording remains open
 - Major PS-002 workstreams: tracked in the summary table at the top of `docs/TASKS.md`
-- Demo: UI visible at `http://localhost:5001` in the user's screenshot; required lifecycle not yet verified end to end
+- Demo: lifecycle verified in isolated browser run and API evidence saved; screen recording and final rehearsal remain
 
 These counts change only when implementation exists and its proof is recorded. A design document alone does not mark a runtime requirement Done.
 
@@ -20,16 +20,16 @@ These counts change only when implementation exists and its proof is recorded. A
 
 | Requirement | Status | Evidence link |
 |---|---|---|
-| R-01 Synthetic service/users | In progress | Localhost screenshot shows CampusPulse and demo account selector |
-| R-02 Exactly three purposes | In progress | Localhost screenshot shows three purpose cards; API interaction not verified |
-| R-03 Grant/withdraw records | In progress | API/UI code exists; state-change proof pending |
-| R-04 Notice version/hash | In progress | Screenshot shows v1.0 and SHA-256; re-consent flow pending |
-| R-05 Mock API enforcement | In progress | Endpoint/UI code exists; allow/deny proof pending |
-| R-06 Withdrawal denial | In progress | Endpoint/UI code exists; withdrawal then denial not demonstrated |
-| R-07 Audit/export | In progress | UI links/endpoints exist; exported records not verified |
-| R-08 12+ passing tests | Done | `evidence/test-results.txt` (19 passed) |
-| R-09 Demo flow | In progress | UI is present; complete sequence not demonstrated |
-| R-10 Pseudocode | In progress | Draft exists; align with verified runtime behavior |
+| R-01 Synthetic service/users | In progress | Isolated browser walkthrough log; saved screenshot/video still needed |
+| R-02 Exactly three purposes | In progress | API state capture and browser observation; saved UI screenshot still needed |
+| R-03 Grant/withdraw records | Done | `evidence/manual-lifecycle-audit.json` preserves grant and withdrawal records |
+| R-04 Notice version/hash | Done | `evidence/manual-lifecycle-responses.json`; suite verifies hash and stale grants |
+| R-05 Mock API enforcement | Done | Captured allow/deny responses and 24 passing lifecycle tests |
+| R-06 Withdrawal denial | Done | Captured withdrawal/next-request denial and purpose-isolation test |
+| R-07 Audit/export | Done | Matching JSON/CSV exports and filtered export files captured |
+| R-08 12+ passing tests | Done | `evidence/test-results.txt` (24 passed) |
+| R-09 Demo flow | In progress | Full sequence exercised and logged; required recording remains pending |
+| R-10 Pseudocode | Done | `docs/DEMO_PSEUDOCODE.md` reviewed against `app.py` and lifecycle evidence |
 | R-11 Submission materials | Not started | — |
 
 ## Update rule

@@ -1,31 +1,37 @@
 # Mentor Demo Pseudocode
 
-This is the planned decision order. Keep it aligned with the implementation before presenting it as implemented.
+This pseudocode follows the current `/api/data-access` decision order in `app.py`. Identity here means membership in the demo's synthetic user allowlist; this prototype does not implement login or production authentication.
 
 ```text
-function requestData(authenticatedUser, requestedPurpose):
-    if requestedPurpose is not one of P1, P2, P3:
-        audit(DENY, INVALID_PURPOSE)
-        return denyWithoutPayload(INVALID_PURPOSE)
+function requestData(userId, purposeId):
+    if userId is not one of the configured synthetic demo users:
+        write audit decision DENY with reason UNKNOWN_USER
+        return HTTP 403 with decision DENY, reason UNKNOWN_USER, payload null
 
-    user = validateIdentity(authenticatedUser)
-    if user is invalid:
-        audit(DENY, UNAUTHENTICATED)
-        return denyWithoutPayload(UNAUTHENTICATED)
+    if purposeId is not exactly P1, P2, or P3:
+        write audit decision DENY with reason INVALID_PURPOSE
+        return HTTP 400 with decision DENY, reason INVALID_PURPOSE, payload null
 
-    event = latestConsentEvent(user, requestedPurpose)
-    if event is missing or event.action is not GRANT:
-        audit(DENY, NO_ACTIVE_CONSENT)
-        return denyWithoutPayload(NO_ACTIVE_CONSENT)
+    currentNotice = load active notice
+    latestEvent = load newest consent event for this user and this purpose
 
-    notice = activeNotice()
-    if event.noticeVersion != notice.version or event.noticeHash != notice.sha256:
-        audit(DENY, NOTICE_MISMATCH)
-        return denyWithoutPayload(NOTICE_MISMATCH)
+    if latestEvent does not exist:
+        reason = NO_ACTIVE_CONSENT
+    else if latestEvent.action is not grant:
+        reason = CONSENT_WITHDRAWN
+    else if latestEvent.noticeVersion/hash differs from currentNotice.version/hash:
+        reason = NOTICE_MISMATCH
+    else:
+        reason = ACTIVE_CONSENT
 
-    payload = syntheticPayloadFor(requestedPurpose)
-    audit(ALLOW, ACTIVE_CONSENT)
-    return allowWithPayload(payload)
+    decision = ALLOW only when reason is ACTIVE_CONSENT; otherwise DENY
+    write an audit decision with decision, reason, user, purpose and current notice reference
+
+    if decision is DENY:
+        return HTTP 403 with decision DENY, reason, payload null
+
+    payload = the synthetic payload mapped to this exact purpose
+    return HTTP 200 with decision ALLOW, reason ACTIVE_CONSENT, payload
 ```
 
-**Status:** Planned, not yet implemented or runtime-verified.
+**Review status:** Compared with the current handler on 2026-11-24. It matches the app's user-before-purpose validation, reason codes, append-only latest-event policy, withdrawal-before-notice-mismatch order, audit-before-response behavior, and payload creation only after ALLOW. Automated lifecycle tests and the saved manual API capture provide behavioral evidence; see `evidence/test-results.txt` and `evidence/manual-lifecycle-responses.json`.
