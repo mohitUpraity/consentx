@@ -4,12 +4,13 @@ Last reviewed: 2026-11-24. This page tracks ConsentX implementation and its own 
 
 ## Overall
 
-- Stage: v1.6.0 field-scoped simulator implemented; v1.7 roadmap documented, identity and operator boundaries added, concurrency hardened, and withdrawal queue/work cancellation implemented
-- Version: **1.7.0-dev4** (37 automated tests pass; T-060–T-062, T-064–T-066 verified)
-- Mandatory requirements complete: **7 / 11**
-- PS-002 task baseline: **13 / 26** complete (10 in progress); v1.7 roadmap: **6 / 14** complete
-- Evidence items captured: **8 / 11** (R-02 has API/browser evidence but still needs a saved UI screenshot; recorded demo and submission proof remain open)
-- Lifecycle tests passing: **37 / 12 required** (v1.7.0-dev4; concurrency, demo identity, operator authorization, revocation queue, and scoped work cancellation verified)
+- Stage: v2.0.0 complete — field-scoped PEP, independent consumer adapters, revocation delivery/failure/retry, My Privacy & downloadable receipts, tamper-evident SHA-256 audit ledger, live browser diagnostics, dark mode, and Render deployment config implemented
+- Version: **2.0.0** (50 automated tests pass; T-060–T-072 implemented and verified)
+- Mandatory requirements complete: **7 / 11** (code complete; R-01/R-02/R-09 screenshot & recorded demo video and R-11 repo/PDF submission remain manual capture/submission steps)
+- PS-002 task baseline: **15 / 26** complete (remaining items are screenshot/video recording and R-11 submission)
+- v1.7/v2.0 roadmap: **13 / 14** complete (T-060–T-072 done; T-073 clean-start demo video recording remains)
+- Evidence items captured: **9 / 11** (`evidence/test-results.txt` 50 passed; clean-start screenshots/video and submission proof remain open)
+- Lifecycle tests passing: **50 / 12 required** (v2.0.0; concurrency, identity isolation, operator gate, revocation delivery/failure/retry/idempotency, My Privacy, receipts, and SHA-256 audit chain verified)
 - Test procedures: lifecycle/filter checks, audit detail rendering, and full-history paging are browser verified; v1.5.0 dashboard, notice history, and decision trace are implemented and API-tested; current UI screenshot and recorded demo remain pending
 - Major PS-002 workstreams: tracked in the summary table at the top of `docs/TASKS.md`
 - Demo: lifecycle verified in isolated browser run and API evidence saved; screen recording and final rehearsal remain

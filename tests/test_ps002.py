@@ -2,6 +2,7 @@ import csv
 from concurrent.futures import ThreadPoolExecutor
 import hashlib
 import io
+import re
 import threading
 import tempfile
 import unittest
@@ -410,6 +411,193 @@ class PS002LifecycleTests(unittest.TestCase):
         versions = state["notice_history"]
         self.assertEqual([item["version"] for item in versions], ["2.0", "1.0"])
         self.assertEqual(versions[0]["sha256"], state["active_notice"]["sha256"])
+
+    def test_38_ui_test_count_matches_actual_suite(self):
+        body = self.client.get("/").get_data(as_text=True)
+        match = re.search(r"(\d+) passing tests", body)
+        self.assertIsNotNone(match, "UI template must display passing test count")
+        displayed = int(match.group(1))
+        actual_tests = [name for name in dir(self) if name.startswith("test_")]
+        self.assertEqual(displayed, len(actual_tests))
+
+    def test_39_audit_ledger_verifies_when_intact(self):
+        self.consent("P1")
+        self.access("P1")
+        self.consent("P1", "withdraw")
+        self.publish_v2()
+        verify = self.client.get("/api/audit/verify")
+        self.assertEqual(verify.status_code, 200)
+        body = verify.get_json()
+        self.assertEqual(body["status"], "intact")
+        self.assertGreaterEqual(body["verified_count"], 5)
+        self.assertEqual(body["verified_count"], body["total_count"])
+
+    def test_40_tampered_ledger_record_fails_verification(self):
+        self.consent("P1")
+        self.access("P1")
+        self.consent("P1", "withdraw")
+        with consentx.db_session(write=True) as con:
+            con.execute("UPDATE audit_ledger SET event_type='ACCESS_DENY' WHERE id=2")
+        verify = self.client.get("/api/audit/verify")
+        self.assertEqual(verify.status_code, 409)
+        body = verify.get_json()
+        self.assertEqual(body["status"], "broken")
+        self.assertEqual(body["broken_at_id"], 2)
+        self.assertIn("row_hash mismatch", body["message"])
+
+    def test_41_deleted_ledger_record_fails_verification(self):
+        self.consent("P1")
+        self.access("P1")
+        self.consent("P1", "withdraw")
+        with consentx.db_session(write=True) as con:
+            con.execute("DELETE FROM audit_ledger WHERE id=2")
+        verify = self.client.get("/api/audit/verify")
+        self.assertEqual(verify.status_code, 409)
+        body = verify.get_json()
+        self.assertEqual(body["status"], "broken")
+        self.assertEqual(body["broken_at_id"], 3)
+        self.assertIn("prev_hash", body["message"])
+
+    def test_42_new_ledger_event_links_to_previous_hash(self):
+        self.consent("P1")
+        self.access("P1")
+        ledger = self.client.get("/api/audit/ledger").get_json()["events"]
+        ordered = list(reversed(ledger))
+        self.assertGreaterEqual(len(ordered), 2)
+        self.assertEqual(ordered[0]["prev_hash"], "0" * 64)
+        for i in range(1, len(ordered)):
+            self.assertEqual(ordered[i]["prev_hash"], ordered[i - 1]["row_hash"])
+
+    def test_43_revocation_delivery_creates_acknowledged_instruction(self):
+        self.consent("P1")
+        withdrawal = self.consent("P1", "withdraw").get_json()
+        rev_id = withdrawal["revocations"][0]["revocation_id"]
+        deliver = self.client.post(f"/api/revocations/{rev_id}/deliver", json={})
+        self.assertEqual(deliver.status_code, 200)
+        job = deliver.get_json()["revocation"]
+        self.assertEqual(job["status"], "ACKNOWLEDGED")
+        self.assertEqual(job["attempts"], 1)
+        self.assertIsNotNone(job["delivered_at"])
+        self.assertIsNotNone(job["acknowledged_at"])
+        self.assertTrue(job["adapter_event_id"].startswith("ACK-"))
+        self.assertEqual(len(job["adapter_receipt_digest"]), 64)
+        ledger_types = {e["event_type"] for e in self.client.get("/api/audit/ledger").get_json()["events"]}
+        self.assertTrue({"REVOCATION_QUEUED", "WORK_CANCELLED", "REVOCATION_DELIVERED", "REVOCATION_ACKNOWLEDGED"}.issubset(ledger_types))
+
+    def test_44_p3_withdrawal_cancels_p3_and_leaves_p1_usable(self):
+        self.consent("P1")
+        self.consent("P3")
+        withdrawal = self.consent("P3", "withdraw").get_json()
+        rev_id = withdrawal["revocations"][0]["revocation_id"]
+        self.assertEqual(withdrawal["revocations"][0]["consumer_id"], "analytics-service")
+        self.assertEqual(self.access("P3").status_code, 403)
+        self.assertEqual(self.access("P1").status_code, 200)
+        actions = self.client.get("/api/pending-actions?user_id=student-001").get_json()["pending_actions"]
+        self.assertTrue(all(a["status"] == "CANCELLED" for a in actions if a["purpose_id"] == "P3"))
+        self.assertTrue(all(a["status"] == "QUEUED" for a in actions if a["purpose_id"] == "P1"))
+        deliver = self.client.post(f"/api/revocations/{rev_id}/deliver", json={})
+        self.assertEqual(deliver.status_code, 200)
+        self.assertEqual(deliver.get_json()["revocation"]["status"], "ACKNOWLEDGED")
+
+    def test_45_unavailable_consumer_records_failure_honestly(self):
+        self.consent("P1")
+        rev_id = self.consent("P1", "withdraw").get_json()["revocations"][0]["revocation_id"]
+        toggle = self.client.post("/api/consumers/notification-service/availability", json={"available": False})
+        self.assertEqual(toggle.status_code, 200)
+        self.assertFalse(toggle.get_json()["consumer"]["available"])
+        deliver = self.client.post(f"/api/revocations/{rev_id}/deliver", json={})
+        self.assertEqual(deliver.status_code, 502)
+        body = deliver.get_json()
+        self.assertEqual(body["reason_code"], "CONSUMER_UNAVAILABLE")
+        job = body["revocation"]
+        self.assertEqual(job["status"], "FAILED")
+        self.assertEqual(job["attempts"], 1)
+        self.assertIsNone(job["acknowledged_at"])
+        self.assertIn("unavailable", job["last_error"])
+
+    def test_46_retry_succeeds_after_consumer_becomes_available(self):
+        self.consent("P1")
+        rev_id = self.consent("P1", "withdraw").get_json()["revocations"][0]["revocation_id"]
+        self.client.post("/api/consumers/notification-service/availability", json={"available": False})
+        self.assertEqual(self.client.post(f"/api/revocations/{rev_id}/deliver", json={}).status_code, 502)
+        self.client.post("/api/consumers/notification-service/availability", json={"available": True})
+        retry = self.client.post(f"/api/revocations/{rev_id}/retry", json={})
+        self.assertEqual(retry.status_code, 200)
+        job = retry.get_json()["revocation"]
+        self.assertEqual(job["status"], "ACKNOWLEDGED")
+        self.assertEqual(job["attempts"], 2)
+        self.assertIsNone(job["last_error"])
+        ledger_types = {e["event_type"] for e in self.client.get("/api/audit/ledger").get_json()["events"]}
+        self.assertIn("REVOCATION_FAILED", ledger_types)
+        self.assertIn("REVOCATION_RETRIED", ledger_types)
+        self.assertIn("REVOCATION_ACKNOWLEDGED", ledger_types)
+
+    def test_47_duplicate_delivery_and_retry_are_idempotent(self):
+        self.consent("P1")
+        rev_id = self.consent("P1", "withdraw").get_json()["revocations"][0]["revocation_id"]
+        first = self.client.post(f"/api/revocations/{rev_id}/deliver", json={})
+        self.assertEqual(first.status_code, 200)
+        ack_id = first.get_json()["revocation"]["adapter_event_id"]
+        dup_deliver = self.client.post(f"/api/revocations/{rev_id}/deliver", json={})
+        self.assertEqual(dup_deliver.status_code, 409)
+        self.assertEqual(dup_deliver.get_json()["reason_code"], "ALREADY_ACKNOWLEDGED")
+        self.assertEqual(dup_deliver.get_json()["revocation"]["attempts"], 1)
+        self.assertEqual(dup_deliver.get_json()["revocation"]["adapter_event_id"], ack_id)
+        dup_retry = self.client.post(f"/api/revocations/{rev_id}/retry", json={})
+        self.assertEqual(dup_retry.status_code, 409)
+        self.assertEqual(dup_retry.get_json()["revocation"]["attempts"], 1)
+
+    def test_48_my_privacy_returns_permissions_services_and_unresolved(self):
+        self.consent("P1")
+        self.consent("P2")
+        self.consent("P1", "withdraw")
+        privacy = self.client.get("/api/my-privacy?user_id=student-001")
+        self.assertEqual(privacy.status_code, 200)
+        body = privacy.get_json()
+        self.assertEqual(body["summary"]["granted_count"], 1)
+        self.assertEqual(body["summary"]["withdrawn_count"], 1)
+        self.assertEqual(body["summary"]["unresolved_revocations"], 1)
+        self.assertEqual(len(body["permissions"]), 3)
+        self.assertEqual(len(body["connected_services"]), 3)
+        rev_id = body["revocations"][0]["revocation_id"]
+        self.client.post(f"/api/revocations/{rev_id}/deliver", json={})
+        after = self.client.get("/api/my-privacy?user_id=student-001").get_json()
+        self.assertEqual(after["summary"]["unresolved_revocations"], 0)
+        self.assertEqual(after["summary"]["acknowledged_revocations"], 1)
+
+    def test_49_privacy_receipt_json_html_and_isolation(self):
+        self.consent("P1")
+        rev_id = self.consent("P1", "withdraw").get_json()["revocations"][0]["revocation_id"]
+        self.client.post(f"/api/revocations/{rev_id}/deliver", json={})
+        json_res = self.client.get(f"/api/privacy-receipt/{rev_id}?format=json")
+        self.assertEqual(json_res.status_code, 200)
+        receipt = json_res.get_json()
+        self.assertEqual(receipt["withdrawal_id"], rev_id)
+        self.assertEqual(receipt["affected_consumer"], "notification-service")
+        self.assertEqual(receipt["cancelled_pending_actions"], 2)
+        self.assertEqual(receipt["consumer_acknowledgement"], "Acknowledged")
+        self.assertIn("not establish that every previously shared copy was erased", receipt["disclaimer"])
+        self.assertTrue(receipt["evidence_ids"]["ledger_event_ids"])
+        html_res = self.client.get(f"/api/privacy-receipt/{rev_id}?format=html")
+        self.assertEqual(html_res.status_code, 200)
+        self.assertIn(rev_id, html_res.get_data(as_text=True))
+        # Another synthetic user cannot view Aarav's receipt
+        self.select_user("student-002")
+        forbidden = self.client.get(f"/api/privacy-receipt/{rev_id}?format=json")
+        self.assertEqual(forbidden.status_code, 403)
+        self.assertEqual(forbidden.get_json()["reason_code"], "IDENTITY_MISMATCH")
+
+    def test_50_diagnostics_and_simulate_pending_work_guard(self):
+        diag = self.client.get("/api/diagnostics")
+        self.assertEqual(diag.status_code, 200)
+        self.assertTrue(diag.get_json()["all_passed"])
+        denied = self.client.post("/api/pending-actions/simulate", json={"user_id": "student-001", "purpose_id": "P1"})
+        self.assertEqual(denied.status_code, 403)
+        self.assertEqual(denied.get_json()["reason_code"], "CONSENT_REQUIRED")
+        self.consent("P1")
+        allowed = self.client.post("/api/pending-actions/simulate", json={"user_id": "student-001", "purpose_id": "P1"})
+        self.assertEqual(allowed.status_code, 201)
+        self.assertEqual(allowed.get_json()["pending_action"]["status"], "QUEUED")
 
 
 if __name__ == "__main__":

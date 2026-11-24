@@ -81,16 +81,16 @@ The product direction and scope are defined in [ROADMAP_v1.7.md](ROADMAP_v1.7.md
 | T-060 | Foundation | Concurrent access-decision integrity | Parallel isolated requests produce a distinct request ID and exactly one audit row each; full suite passes. | [x] Done |
 | T-061 | Foundation | Explicit demo identity boundary and user isolation | Cross-user spoof attempt is rejected; supported demo identity flow is documented and tested. | [x] Done |
 | T-062 | Foundation | Operator authorization for notice publishing | Non-operator cannot publish; operator path and test evidence are documented. | [x] Done |
-| T-063 | Consumers | Three independent simulated consumer adapters | Each consumer has a registered purpose/field boundary and observable adapter behavior. | [ ] Not started |
+| T-063 | Consumers | Three independent simulated consumer adapters | Each consumer has a registered purpose/field boundary and observable adapter behavior. | [x] Done (`adapters.py`, T-43–T-46) |
 | T-064 | Consumers | Cross-consumer and field-scope policy cases | Authorized requests allow only permitted fields; mismatch and overreach deny with no payload. | [x] Done |
 | T-065 | Orchestration | Persistent revocation jobs | Withdrawal creates a unique job per affected consumer with status, timestamps, and attempts. | [x] Done |
 | T-066 | Orchestration | Purpose-scoped pending work cancellation | Affected queued work is cancelled/blocked; unrelated-purpose work remains queued. | [x] Done |
-| T-067 | Orchestration | Local adapter delivery and acknowledgement persistence | Adapter receives an instruction and its generated response is stored with a linked event ID. | [ ] Not started |
-| T-068 | Orchestration | Failure and retry path | Simulated outage remains unresolved, retries are counted, and later acknowledgement resolves it. | [ ] Not started |
-| T-069 | User privacy | My Privacy view | User can inspect permissions, recipients/fields, withdrawal progress, and unresolved actions. | [ ] Not started |
-| T-070 | User privacy | Downloadable privacy receipt | Receipt links consent, notice, affected services, pending work, and acknowledgements; limitation is clear. | [ ] Not started |
-| T-071 | Evidence | Unified event linkage and integrity verification | Linked history validates; altered event is detected by an automated test. | [ ] Not started |
-| T-072 | Verification | End-to-end scenario test set | Withdrawal blocks the P3 analytics consumer, affects only P3 work, supports retry/ack, and leaves P1 usable. | [ ] Not started |
+| T-067 | Orchestration | Local adapter delivery and acknowledgement persistence | Adapter receives an instruction and its generated response is stored with a linked event ID. | [x] Done (T-43) |
+| T-068 | Orchestration | Failure and retry path | Simulated outage remains unresolved, retries are counted, and later acknowledgement resolves it. | [x] Done (T-45–T-47) |
+| T-069 | User privacy | My Privacy view | User can inspect permissions, recipients/fields, withdrawal progress, and unresolved actions. | [x] Done (T-48) |
+| T-070 | User privacy | Downloadable privacy receipt | Receipt links consent, notice, affected services, pending work, and acknowledgements; limitation is clear. | [x] Done (T-49) |
+| T-071 | Evidence | Unified event linkage and integrity verification | Linked history validates; altered event is detected by an automated test. | [x] Done (T-39–T-42) |
+| T-072 | Verification | End-to-end scenario test set | Withdrawal blocks the P3 analytics consumer, affects only P3 work, supports retry/ack, and leaves P1 usable. | [x] Done (T-44) |
 | T-073 | Demo | Clean-start judge walkthrough | Recorded success and failure paths match stored user receipt and operator evidence. | [ ] Not started |
 
-**Execution rule:** T-060–T-062, T-064–T-066 are implemented; T-063 independent adapters remain open. T-067–T-068 extend the revocation job lifecycle with delivery, acknowledgement, and retry; T-069–T-070 consume that event model; T-071–T-073 close verification and demo readiness. Keep actual status in sync with `ROADMAP_v1.7.md`, `TEST_PLAN.md`, `WALKTHROUGH.md`, `RELEASES.md`, and `PROGRESS.md`.
+**Execution rule:** T-060–T-072 are implemented and verified in `tests/test_ps002.py` (50 tests passing). Only T-073 (clean-start recorded walkthrough) and R-11 submission packaging remain open.

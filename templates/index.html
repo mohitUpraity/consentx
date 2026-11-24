@@ -1,7 +1,8 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ConsentX · CampusPulse</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
@@ -12,80 +13,474 @@
         <span class="brand-mark" aria-hidden="true">C</span>
         <span><strong>ConsentX</strong><small>CampusPulse · PS-002</small></span>
       </a>
-      <span class="nav-label">WORKSPACE</span>
+      <span class="nav-label">Workspace</span>
       <nav class="main-nav" aria-label="Main navigation">
         <a class="nav-link active" href="#dashboard" data-view="dashboard"><span class="nav-icon">⌂</span>Dashboard</a>
-        <a class="nav-link" href="#consent" data-view="consent"><span class="nav-icon">◉</span>Consent management</a>
+        <a class="nav-link" href="#consent" data-view="consent"><span class="nav-icon">◉</span>Consent &amp; revocation</a>
         <a class="nav-link" href="#simulator" data-view="simulator"><span class="nav-icon">⇄</span>Data access simulator</a>
+        <a class="nav-link" href="#privacy" data-view="privacy"><span class="nav-icon">◈</span>My Privacy</a>
         <a class="nav-link" href="#notices" data-view="notices"><span class="nav-icon">▤</span>Notice versions</a>
-        <a class="nav-link" href="#audit" data-view="audit"><span class="nav-icon">≋</span>Audit &amp; tests</a>
+        <a class="nav-link" href="#audit" data-view="audit"><span class="nav-icon">≋</span>Audit &amp; verification</a>
       </nav>
-      <div class="sidebar-bottom"><span class="live-dot"></span><span><strong>Synthetic environment</strong><small>Server-side enforcement enabled</small></span></div>
+      <div class="sidebar-bottom">
+        <span class="live-dot"></span>
+        <span><strong>Synthetic environment</strong><small>PEP + Revocation + SHA-256 Ledger</small></span>
+      </div>
       <span class="sidebar-version">ConsentX v{{ app_version }}</span>
     </aside>
 
     <div class="workspace">
-      <div class="topbar">
+      <header class="topbar">
         <div class="breadcrumb"><strong>ConsentX</strong><span>/</span><span id="current-section">Dashboard</span></div>
-        <div class="topbar-actions"><span class="environment-pill"><span class="live-dot"></span>DEMO</span><label for="user-select">Synthetic identity (demo)</label><select id="user-select">{% for uid, name in users.items() %}<option value="{{ uid }}">{{ name }}</option>{% endfor %}</select></div>
-      </div>
+        <div class="topbar-actions">
+          <span class="environment-pill"><span class="live-dot"></span>DEMO</span>
+          <label for="user-select">Identity</label>
+          <select id="user-select">
+            {% for uid, name in users.items() %}
+            <option value="{{ uid }}">{{ name }}</option>
+            {% endfor %}
+          </select>
+          <button id="theme-toggle" class="icon-btn" type="button" title="Toggle light/dark theme" aria-label="Toggle light or dark theme">☾</button>
+        </div>
+      </header>
 
       <main>
+        <!-- ==================== DASHBOARD ==================== -->
         <section id="view-dashboard" class="view active" aria-labelledby="dashboard-title">
-          <div class="page-heading"><div><span class="eyebrow">OVERVIEW / CONTROL PLANE</span><h1 id="dashboard-title">Consent control center</h1><p>Consent can be recorded and still ignored. ConsentX checks the latest purpose decision before every data request.</p></div><span class="server-badge"><span class="live-dot"></span>Policy enforcement active</span></div>
-          <div class="problem-callout"><span class="callout-icon">!</span><div><strong>The failure PS-002 is trying to prevent</strong><p>A withdrawal must reach the point where data is shared. This demo checks the current grant and notice before it releases even synthetic data.</p></div></div>
+          <div class="page-heading">
+            <div>
+              <span class="eyebrow">Overview / Control Plane</span>
+              <h1 id="dashboard-title">Consent control center</h1>
+              <p>Consent can be recorded and still ignored. ConsentX checks consumer, purpose, field scope, latest consent, and notice hash before releasing data—and orchestrates downstream revocation when users withdraw.</p>
+            </div>
+            <div class="heading-badges">
+              <span id="dashboard-ledger-pill" class="server-badge"><span class="live-dot"></span>Ledger verifying…</span>
+            </div>
+          </div>
+
+          <div class="problem-callout">
+            <span class="callout-icon">!</span>
+            <div>
+              <strong>The failure PS-002 is trying to prevent</strong>
+              <p>A withdrawal must stop future requests, cancel queued work, and reach the downstream consumer with verifiable proof. This prototype executes every check on the Flask backend and links all actions in a tamper-evident SHA-256 ledger.</p>
+            </div>
+          </div>
+
           <div class="metric-grid">
-            <article class="metric-card"><span class="metric-icon blue">◎</span><span class="metric-label">Synthetic accounts</span><strong id="metric-users">2</strong><small>Fictional demo identities</small></article>
-            <article class="metric-card"><span class="metric-icon green">✓</span><span class="metric-label">Active purpose grants</span><strong id="metric-grants">—</strong><small id="metric-grants-caption">For the selected account</small></article>
-            <article class="metric-card"><span class="metric-icon purple">⇄</span><span class="metric-label">Access decisions</span><strong id="metric-requests">—</strong><small>Recorded allow and deny checks</small></article>
-            <article class="metric-card"><span class="metric-icon orange">⊘</span><span class="metric-label">Requests denied</span><strong id="metric-denied">—</strong><small>Protected payload withheld</small></article>
-            <article class="metric-card"><span class="metric-label">Requests allowed</span><strong id="metric-allowed">—</strong><small>Only approved fields returned</small></article>
+            <article class="metric-card">
+              <span class="metric-icon blue">◎</span>
+              <span class="metric-label">Synthetic accounts</span>
+              <strong id="metric-users">{{ users|length }}</strong>
+              <small>Session-pinned identities</small>
+            </article>
+            <article class="metric-card">
+              <span class="metric-icon green">✓</span>
+              <span class="metric-label">Active purpose grants</span>
+              <strong id="metric-grants">—</strong>
+              <small id="metric-grants-caption">For selected account</small>
+            </article>
+            <article class="metric-card">
+              <span class="metric-icon purple">⇄</span>
+              <span class="metric-label">Access decisions</span>
+              <strong id="metric-requests">—</strong>
+              <small>Allow and deny checks</small>
+            </article>
+            <article class="metric-card">
+              <span class="metric-icon orange">⊘</span>
+              <span class="metric-label">Requests denied</span>
+              <strong id="metric-denied">—</strong>
+              <small>Protected payload withheld</small>
+            </article>
+            <article class="metric-card">
+              <span class="metric-icon teal">↗</span>
+              <span class="metric-label">Requests allowed</span>
+              <strong id="metric-allowed">—</strong>
+              <small>Approved fields only</small>
+            </article>
           </div>
+
           <div class="dashboard-grid">
-            <section class="panel purpose-overview"><div class="panel-heading"><div><span class="eyebrow">ACCESS BOUNDARIES</span><h2>Three separate purposes</h2></div><a href="#consent" class="text-link">Manage consent <span>→</span></a></div><div id="dashboard-purposes" class="dashboard-purpose-list"></div></section>
-            <section class="panel flow-panel"><span class="eyebrow">REQUEST-TIME POLICY</span><h2>One request, checked in order</h2><ol class="flow-list"><li><span>1</span><div><strong>Identify the synthetic user</strong><small>Unknown identities fail closed.</small></div></li><li><span>2</span><div><strong>Match the exact purpose</strong><small>A P1 grant cannot unlock P2 or P3.</small></div></li><li><span>3</span><div><strong>Read the latest event and notice</strong><small>Withdrawal or stale notice means deny.</small></div></li><li><span>4</span><div><strong>Release only that purpose's data</strong><small>Every decision is recorded for review.</small></div></li></ol><a class="button-link" href="#simulator">Try a request <span>→</span></a></section>
+            <section class="panel purpose-overview">
+              <div class="panel-heading">
+                <div><span class="eyebrow">Access boundaries</span><h2>Three separate purposes</h2></div>
+                <a href="#consent" class="text-link">Manage consent <span>→</span></a>
+              </div>
+              <div id="dashboard-purposes" class="dashboard-purpose-list"></div>
+              <div class="consumer-strip-wrap">
+                <span class="eyebrow">Downstream adapters</span>
+                <div id="dashboard-consumers" class="consumer-mini-grid"></div>
+              </div>
+            </section>
+
+            <section class="panel flow-panel">
+              <span class="eyebrow">Request-time policy</span>
+              <h2>One request, checked in order</h2>
+              <ol class="flow-list">
+                <li><span>1</span><div><strong>Pin synthetic user identity</strong><small>Cross-user request fields are rejected.</small></div></li>
+                <li><span>2</span><div><strong>Verify consumer, operation &amp; field scope</strong><small>Only authorized service + READ + allowed fields pass.</small></div></li>
+                <li><span>3</span><div><strong>Read latest consent &amp; active notice hash</strong><small>Withdrawal or stale notice fails closed.</small></div></li>
+                <li><span>4</span><div><strong>Release scoped fields &amp; chain to ledger</strong><small>Every decision links into the SHA-256 audit chain.</small></div></li>
+              </ol>
+              <a class="button-link" href="#simulator">Open data access simulator <span>→</span></a>
+            </section>
           </div>
-          <section class="panel dashboard-recent"><div class="panel-heading"><div><span class="eyebrow">LATEST DECISIONS</span><h2>What happened most recently</h2><p class="field-help">Follow a request from this summary to its full decision record in the audit trail.</p></div><a href="#audit" class="text-link">Open audit trail →</a></div><div id="dashboard-recent-list" class="recent-decision-list"></div></section>
-          <div class="notice-summary panel"><div><span class="eyebrow">ACTIVE PRIVACY NOTICE</span><h2 id="dashboard-notice-version">Loading…</h2><p id="dashboard-notice-text"></p></div><div class="digest-block"><span>SHA-256 content digest</span><code id="dashboard-notice-hash"></code></div><a href="#notices" class="text-link">View versions →</a></div>
+
+          <section class="panel dashboard-recent">
+            <div class="panel-heading">
+              <div>
+                <span class="eyebrow">Latest decisions</span>
+                <h2>What happened most recently</h2>
+                <p class="field-help">Follow a request from this summary to its full decision record in the audit trail.</p>
+              </div>
+              <a href="#audit" class="text-link">Open audit trail →</a>
+            </div>
+            <div id="dashboard-recent-list" class="recent-decision-list"></div>
+          </section>
+
+          <div class="notice-summary panel">
+            <div>
+              <span class="eyebrow">Active privacy notice</span>
+              <h2 id="dashboard-notice-version">Loading…</h2>
+              <p id="dashboard-notice-text"></p>
+            </div>
+            <div class="digest-block">
+              <span>SHA-256 content digest</span>
+              <code id="dashboard-notice-hash"></code>
+            </div>
+            <a href="#notices" class="text-link">View versions →</a>
+          </div>
+
           <p class="scope-note">Synthetic technical prototype · No real personal data · No legal-compliance claim</p>
         </section>
 
+        <!-- ==================== CONSENT & REVOCATION ==================== -->
         <section id="view-consent" class="view" aria-labelledby="consent-title">
-          <div class="page-heading"><div><span class="eyebrow">CONSENT / PURPOSES</span><h1 id="consent-title">Consent management</h1><p>Grant or withdraw each purpose independently. Every action creates a new event; earlier choices remain in the audit trail.</p></div><span class="scope-chip">3 independent purposes</span></div>
-          <div class="notice-inline"><strong>Purpose boundary</strong><span>A grant for one purpose never authorizes either of the others.</span><span id="consent-notice-current"></span></div>
+          <div class="page-heading">
+            <div>
+              <span class="eyebrow">Consent / Purposes &amp; Orchestration</span>
+              <h1 id="consent-title">Consent &amp; revocation management</h1>
+              <p>Grant or withdraw each purpose independently. Withdrawal immediately blocks future access, cancels matching queued work, and creates a service instruction you can deliver, fail-test, retry, and acknowledge.</p>
+            </div>
+            <span class="scope-chip">3 independent purposes</span>
+          </div>
+
+          <div class="notice-inline">
+            <strong>Purpose boundary</strong>
+            <span>A grant for one purpose never authorizes either of the others.</span>
+            <span id="consent-notice-current"></span>
+          </div>
+
           <div id="purpose-list" class="purpose-list"></div>
           <p id="withdrawal-feedback" class="withdrawal-feedback" aria-live="polite"></p>
-          <section class="panel revocation-panel"><div class="panel-heading"><div><span class="eyebrow">WITHDRAWAL FOLLOW-THROUGH</span><h2>Consumer instructions</h2></div><span class="scope-chip">Prototype queue</span></div><p class="field-help">Withdrawing consent blocks new access immediately, cancels queued work for that purpose, and queues an instruction for the matching simulated service. A queued instruction is not yet an acknowledgement.</p><div id="revocation-list" class="revocation-list"><p class="empty-state">No withdrawal instructions yet.</p></div><h3 class="pending-actions-title">Queued work</h3><div id="pending-action-list" class="revocation-list"><p class="empty-state">Loading queued work…</p></div><p class="microcopy">A future acknowledgement will show that the simulated service received the instruction. It will not prove that every previously shared copy was erased.</p></section>
+
+          <section class="panel consumer-adapters-panel">
+            <div class="panel-heading">
+              <div>
+                <span class="eyebrow">Simulated downstream services</span>
+                <h2>Consumer adapters &amp; failure simulation</h2>
+                <p class="field-help">Take a consumer service offline to verify that failed deliveries remain unresolved until retried after recovery.</p>
+              </div>
+              <span class="scope-chip">Persistent SQLite state</span>
+            </div>
+            <div id="consumer-adapter-list" class="consumer-adapter-grid"></div>
+          </section>
+
+          <section class="panel revocation-panel">
+            <div class="panel-heading">
+              <div>
+                <span class="eyebrow">Withdrawal follow-through</span>
+                <h2>Consumer revocation instructions</h2>
+              </div>
+              <span class="scope-chip">PENDING → DELIVERED → ACKNOWLEDGED</span>
+            </div>
+            <p class="field-help">Withdrawing consent immediately stops API access and cancels matching queued work, then creates a <code>PENDING</code> instruction. Click <strong>Deliver</strong> to invoke the consumer adapter, or simulate an outage to observe <code>FAILED</code> and <strong>Retry</strong>.</p>
+            <div id="revocation-list" class="revocation-list">
+              <p class="empty-state">No withdrawal instructions yet.</p>
+            </div>
+
+            <div class="panel-heading queued-work-header">
+              <h3 class="pending-actions-title">Queued &amp; cancelled work</h3>
+              <div id="simulate-work-buttons" class="inline-actions"></div>
+            </div>
+            <div id="pending-action-list" class="revocation-list">
+              <p class="empty-state">Loading queued work…</p>
+            </div>
+            <p class="microcopy">A consumer acknowledgement confirms the simulated service processed the instruction. It does not prove that every previously shared copy was erased.</p>
+          </section>
         </section>
 
+        <!-- ==================== DATA ACCESS SIMULATOR ==================== -->
         <section id="view-simulator" class="view" aria-labelledby="simulator-title">
-          <div class="page-heading"><div><span class="eyebrow">SIMULATOR / DOWNSTREAM API</span><h1 id="simulator-title">Data access simulator</h1><p>Send a synthetic consumer request and inspect the server's decision before any payload is returned.</p></div><span class="server-badge"><span class="live-dot"></span>Backend enforced</span></div>
+          <div class="page-heading">
+            <div>
+              <span class="eyebrow">Simulator / Downstream PEP</span>
+              <h1 id="simulator-title">Data access simulator</h1>
+              <p>Send a synthetic consumer request and inspect the server's 6-step policy decision before any field is released.</p>
+            </div>
+            <span class="server-badge"><span class="live-dot"></span>Backend enforced</span>
+          </div>
+
+          <div class="preset-bar panel">
+            <span class="eyebrow">Quick demo scenarios</span>
+            <div class="preset-buttons">
+              <button type="button" class="secondary preset-btn" data-preset="valid-p1">✓ Valid P1 read</button>
+              <button type="button" class="secondary preset-btn" data-preset="field-overreach">⚠ Field overreach (student_email)</button>
+              <button type="button" class="secondary preset-btn" data-preset="wrong-consumer">⊘ Wrong consumer mismatch</button>
+              <button type="button" class="secondary preset-btn" data-preset="write-op">✎ Unauthorized WRITE</button>
+            </div>
+          </div>
+
           <div class="simulator-grid">
-            <section class="panel request-builder"><span class="eyebrow">REQUEST CONFIGURATION</span><h2>Build a request</h2><p class="field-help">Choose who is asking, why they need access, and which fields they want. The server checks every requested field.</p><div class="request-form-grid"><label for="request-purpose">Purpose<select id="request-purpose"></select></label><label for="request-consumer">Consumer service<select id="request-consumer">{% for consumer in consumers %}<option value="{{ consumer }}">{{ consumer }}</option>{% endfor %}</select></label><label for="request-operation">Operation<select id="request-operation"><option value="READ">Read data</option><option value="WRITE">Write data</option></select></label></div><fieldset class="field-picker"><legend>Requested data fields</legend><div id="request-fields"></div><small>Every selected field must be allowed for this consumer and purpose.</small></fieldset><button id="request-data">Evaluate access request</button><div class="request-preview"><div><span class="http-method">POST</span><code>/api/data-access</code></div><pre id="request-json">{}</pre></div><p class="microcopy">The Flask server re-reads the latest consent and notice before returning any fields.</p></section>
-            <section class="panel response-panel"><div class="panel-heading"><div><span class="eyebrow">SERVER RESPONSE</span><h2>Decision trace</h2></div><span id="response-status" class="response-status idle">READY</span></div><p id="response-empty" class="response-empty">Send a request to see each policy check and whether the payload was released.</p><ol id="decision-trace" class="decision-trace" aria-live="polite"></ol><pre id="request-result" aria-live="polite">Choose a purpose and send a request.</pre></section>
+            <section class="panel request-builder">
+              <span class="eyebrow">Request configuration</span>
+              <h2>Build a request</h2>
+              <p class="field-help">Choose who is asking, why they need access, and which fields they want. The server validates every field.</p>
+              <div class="request-form-grid">
+                <label for="request-purpose">Purpose<select id="request-purpose"></select></label>
+                <label for="request-consumer">Consumer service
+                  <select id="request-consumer">
+                    {% for consumer in consumers %}
+                    <option value="{{ consumer }}">{{ consumer }}</option>
+                    {% endfor %}
+                  </select>
+                </label>
+                <label for="request-operation">Operation
+                  <select id="request-operation">
+                    <option value="READ">Read data</option>
+                    <option value="WRITE">Write data</option>
+                  </select>
+                </label>
+              </div>
+              <fieldset class="field-picker">
+                <legend>Requested data fields</legend>
+                <div id="request-fields"></div>
+                <small>Allowed fields match the selected purpose; out-of-scope fields trigger <code>FIELD_SCOPE_EXCEEDED</code>.</small>
+              </fieldset>
+              <button id="request-data" type="button">Evaluate access request</button>
+              <div class="request-preview">
+                <div><span class="http-method">POST</span><code>/api/data-access</code></div>
+                <pre id="request-json">{}</pre>
+              </div>
+              <p class="microcopy">The Flask server re-reads the latest consent and notice before returning any fields.</p>
+            </section>
+
+            <section class="panel response-panel">
+              <div class="panel-heading">
+                <div><span class="eyebrow">Server response</span><h2>Decision trace</h2></div>
+                <span id="response-status" class="response-status idle">READY</span>
+              </div>
+              <p id="response-empty" class="response-empty">Send a request or pick a scenario preset to see each policy check and whether the payload was released.</p>
+              <ol id="decision-trace" class="decision-trace" aria-live="polite"></ol>
+              <pre id="request-result" aria-live="polite">Choose a purpose and send a request.</pre>
+            </section>
           </div>
-          <div class="explain-note"><strong>How to read the result</strong><span>ALLOW means every requested field passed the user, consumer, purpose, consent, and notice checks. DENY means no payload was returned. Use the request ID to find the same decision in the audit trail.</span></div>
+
+          <div class="explain-note">
+            <strong>How to read the result</strong>
+            <span>ALLOW means every requested field passed the user, consumer, purpose, consent, and notice checks. DENY means zero protected bytes were returned. Use the request ID to locate the exact entry in the audit trail.</span>
+          </div>
         </section>
 
+        <!-- ==================== MY PRIVACY (USER VIEW) ==================== -->
+        <section id="view-privacy" class="view" aria-labelledby="privacy-title">
+          <div class="page-heading">
+            <div>
+              <span class="eyebrow">Data Subject Perspective</span>
+              <h1 id="privacy-title">My Privacy &amp; Receipts</h1>
+              <p>See what permissions you granted, which services can read which fields, whether your withdrawal instructions succeeded or remain unresolved, and download verifiable receipts.</p>
+            </div>
+            <span id="privacy-user-pill" class="scope-chip">Loading identity…</span>
+          </div>
+
+          <div id="privacy-alert-banner" class="privacy-alert" hidden></div>
+
+          <div class="privacy-summary-grid" id="privacy-summary-grid"></div>
+
+          <div class="dashboard-grid">
+            <section class="panel">
+              <div class="panel-heading">
+                <div><span class="eyebrow">Your choices</span><h2>My permissions</h2></div>
+                <a href="#consent" class="text-link">Change choices →</a>
+              </div>
+              <div id="privacy-permissions-list" class="privacy-list"></div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-heading">
+                <div><span class="eyebrow">Data recipients</span><h2>Connected services &amp; fields</h2></div>
+              </div>
+              <div id="privacy-services-list" class="privacy-list"></div>
+            </section>
+          </div>
+
+          <section class="panel revocation-panel">
+            <div class="panel-heading">
+              <div>
+                <span class="eyebrow">Withdrawal proof</span>
+                <h2>Withdrawal history &amp; downloadable receipts</h2>
+              </div>
+            </div>
+            <p class="field-help">Every withdrawal generates a receipt linking your consent event, notice SHA-256 digest, cancelled queued actions, and consumer acknowledgement.</p>
+            <div id="privacy-withdrawals-list" class="revocation-list">
+              <p class="empty-state">No withdrawals recorded for this identity yet.</p>
+            </div>
+            <p id="privacy-disclaimer" class="microcopy"></p>
+          </section>
+        </section>
+
+        <!-- ==================== NOTICE VERSIONS ==================== -->
         <section id="view-notices" class="view" aria-labelledby="notice-title">
-          <div class="page-heading"><div><span class="eyebrow">NOTICE / VERSION CONTROL</span><h1 id="notice-title">Notice versions</h1><p>Each consent event points to the exact notice version and SHA-256 digest shown when the choice was made.</p></div><span id="notice-pill" class="environment-pill">Loading notice…</span></div>
+          <div class="page-heading">
+            <div>
+              <span class="eyebrow">Notice / Version Control</span>
+              <h1 id="notice-title">Notice versions</h1>
+              <p>Each consent event points to the exact notice version and SHA-256 digest active when the choice was made.</p>
+            </div>
+            <span id="notice-pill" class="environment-pill">Loading notice…</span>
+          </div>
+
           <div class="notice-manager-grid">
-            <section class="panel notice-editor"><span class="eyebrow">PUBLISH A REVISION</span><h2>Prepare the next notice</h2><div class="notice-warning">Publishing a changed notice makes existing grants stale. Users must confirm again before a request is allowed.</div><div class="operator-access"><label for="operator-token">Operator access code<input id="operator-token" type="password" autocomplete="off" placeholder="Enter configured demo operator code"></label><button id="operator-enable" class="secondary" type="button">Unlock publishing</button><span id="operator-state" aria-live="polite">Student mode · publishing disabled</span></div><label for="notice-text">Notice text</label><textarea id="notice-text" rows="7" maxlength="4000"></textarea><div class="editor-footer"><span id="notice-char-count" class="microcopy"></span><button id="publish-notice" disabled>Publish next version</button></div><p id="notice-publish-result" class="microcopy" aria-live="polite">The server calculates and stores the SHA-256 digest.</p></section>
-            <section class="panel notice-history-panel"><div class="panel-heading"><div><span class="eyebrow">IMMUTABLE RECORDS</span><h2>Published versions</h2></div><span id="notice-history-count" class="scope-chip"></span></div><div id="notice-history" class="notice-history"></div></section>
+            <section class="panel notice-editor">
+              <span class="eyebrow">Publish a revision</span>
+              <h2>Prepare the next notice</h2>
+              <div class="notice-warning">Publishing a changed notice makes existing grants stale. Users must confirm again before a request is allowed.</div>
+              <div class="operator-access">
+                <label for="operator-token">Operator access code
+                  <input id="operator-token" type="password" autocomplete="off" placeholder="Enter configured CONSENTX_OPERATOR_TOKEN">
+                </label>
+                <button id="operator-enable" class="secondary" type="button">Unlock publishing</button>
+                <span id="operator-state" aria-live="polite">Student mode · publishing disabled</span>
+              </div>
+              <label for="notice-text">Notice text</label>
+              <textarea id="notice-text" rows="7" maxlength="4000"></textarea>
+              <div class="editor-footer">
+                <span id="notice-char-count" class="microcopy"></span>
+                <button id="publish-notice" type="button" disabled>Publish next version</button>
+              </div>
+              <p id="notice-publish-result" class="microcopy" aria-live="polite">The server calculates and stores the SHA-256 digest.</p>
+            </section>
+
+            <section class="panel notice-history-panel">
+              <div class="panel-heading">
+                <div><span class="eyebrow">Immutable records</span><h2>Published versions</h2></div>
+                <span id="notice-history-count" class="scope-chip"></span>
+              </div>
+              <div id="notice-history" class="notice-history"></div>
+            </section>
           </div>
         </section>
 
+        <!-- ==================== AUDIT & VERIFICATION ==================== -->
         <section id="view-audit" class="view" aria-labelledby="audit-title">
-          <div class="page-heading"><div><span class="eyebrow">EVIDENCE / VERIFICATION</span><h1 id="audit-title">Audit &amp; tests</h1><p>Inspect consent events and every access decision. Filter the timeline, then export the matching evidence.</p></div><div class="buttons"><a id="export-json" href="/api/audit?format=json">Export JSON</a><a id="export-csv" href="/api/audit?format=csv">Export CSV</a></div></div>
-          <div class="audit-statline"><span><strong id="audit-access-count">—</strong> access decisions</span><span><strong id="audit-consent-count">—</strong> consent events</span><span><span class="live-dot"></span>Current demo identity only · persisted in SQLite</span></div>
-          <section class="panel audit"><div class="panel-heading"><div><span class="eyebrow">APPEND-ONLY EVENTS</span><h2>Audit trail</h2></div></div><div class="audit-filters"><label>User<select id="audit-user"><option value="">Selected demo identity</option></select></label><label>Purpose<select id="audit-purpose"><option value="">All purposes</option>{% for pid, purpose in purposes.items() %}<option value="{{ pid }}">{{ pid }} · {{ purpose.name }}</option>{% endfor %}</select></label><label>Decision<select id="audit-decision"><option value="">All events</option><option value="ALLOW">Allowed</option><option value="DENY">Denied</option></select></label></div><p id="audit-count" class="muted" aria-live="polite"></p><div id="audit-list" class="audit-list"></div><button id="audit-load-older" class="secondary" type="button" hidden>Load older events</button></section>
-          <div class="test-evidence"><span class="test-check">✓</span><div><strong>Lifecycle and field-scope suite: 31 passing tests</strong><p>Isolated temporary database. Test cases cover the consent lifecycle, exact service/purpose/field scope, withdrawal, notice mismatch, and JSON/CSV exports.</p></div><a href="/api/health" target="_blank" rel="noreferrer">Check API health</a></div>
-          <details class="panel test-breakdown"><summary>What the tests prove</summary><dl><div><dt>Consent lifecycle</dt><dd>Grant, withdrawal, re-consent, purpose isolation, and stale notice denial.</dd></div><div><dt>Request boundary</dt><dd>Only the matching consumer and purpose can request allowed fields; extra fields or unsupported operations are denied without a payload.</dd></div><div><dt>Audit evidence</dt><dd>Each request has an ID and exports include consumer, operation, and requested fields.</dd></div><div><dt>Limit</dt><dd>These are prototype behavior tests, not a production security or legal-compliance certification.</dd></div></dl></details>
+          <div class="page-heading">
+            <div>
+              <span class="eyebrow">Evidence / Verification</span>
+              <h1 id="audit-title">Audit &amp; integrity verification</h1>
+              <p>Verify the tamper-evident SHA-256 ledger, run live backend self-checks, filter events, and export JSON or CSV evidence.</p>
+            </div>
+            <div class="buttons">
+              <a id="export-json" href="/api/audit?format=json">Export JSON</a>
+              <a id="export-csv" href="/api/audit?format=csv">Export CSV</a>
+            </div>
+          </div>
+
+          <section class="panel integrity-card">
+            <div class="panel-heading">
+              <div>
+                <span class="eyebrow">Tamper-evident hash chain</span>
+                <h2>Unified SHA-256 audit ledger</h2>
+                <p class="field-help">Every consent, access decision, notice change, queued-work cancellation, delivery, failure, retry, and acknowledgement is linked by <code>H_i = SHA256(H_{i-1} || CanonicalEvent_i)</code>.</p>
+              </div>
+              <div class="inline-actions">
+                <span id="integrity-badge" class="status">Checking…</span>
+                <button id="verify-integrity-btn" type="button">Verify audit integrity</button>
+              </div>
+            </div>
+            <div id="integrity-details" class="integrity-details"></div>
+          </section>
+
+          <section class="panel diagnostics-card">
+            <div class="panel-heading">
+              <div>
+                <span class="eyebrow">Live backend check</span>
+                <h2>In-browser diagnostic suite</h2>
+                <p class="field-help">Executes live non-destructive verification checks against the running server and database.</p>
+              </div>
+              <button id="run-diagnostics-btn" type="button" class="secondary">↻ Run live diagnostics</button>
+            </div>
+            <div id="diagnostics-results" class="diagnostics-table-wrap">
+              <p class="empty-state">Click <strong>Run live diagnostics</strong> to verify live backend guarantees.</p>
+            </div>
+          </section>
+
+          <div class="audit-statline">
+            <span><strong id="audit-access-count">—</strong> access decisions</span>
+            <span><strong id="audit-consent-count">—</strong> consent events</span>
+            <span><strong id="audit-ledger-count">—</strong> chained ledger blocks</span>
+            <span><span class="live-dot"></span><span id="audit-identity-scope">Session-pinned identity</span></span>
+          </div>
+
+          <section class="panel audit">
+            <div class="panel-heading">
+              <div><span class="eyebrow">Append-only events</span><h2>Audit trail</h2></div>
+              <div class="view-toggle" role="group" aria-label="Audit display mode">
+                <button id="mode-timeline-btn" type="button" class="secondary active">Activity timeline</button>
+                <button id="mode-ledger-btn" type="button" class="secondary">SHA-256 ledger</button>
+              </div>
+            </div>
+            <div class="audit-filters">
+              <label>Identity<select id="audit-user"><option value="">Selected demo identity</option></select></label>
+              <label>Purpose
+                <select id="audit-purpose">
+                  <option value="">All purposes</option>
+                  {% for pid, purpose in purposes.items() %}
+                  <option value="{{ pid }}">{{ pid }} · {{ purpose.name }}</option>
+                  {% endfor %}
+                </select>
+              </label>
+              <label>Decision
+                <select id="audit-decision">
+                  <option value="">All events</option>
+                  <option value="ALLOW">Allowed</option>
+                  <option value="DENY">Denied</option>
+                </select>
+              </label>
+            </div>
+            <p id="audit-count" class="muted" aria-live="polite"></p>
+            <div id="audit-list" class="audit-list"></div>
+            <button id="audit-load-older" class="secondary" type="button" hidden>Load older events</button>
+          </section>
+
+          <div class="test-evidence">
+            <span class="test-check">✓</span>
+            <div>
+              <strong>Lifecycle and field-scope suite: {{ suite_test_count }} passing tests</strong>
+              <p>Isolated temporary SQLite database per test. Covers consent lifecycle, consumer/purpose/field scope, concurrency, revocation delivery/failure/retry, receipts, and tamper-evident SHA-256 ledger verification.</p>
+            </div>
+            <a href="/api/health" target="_blank" rel="noreferrer">Check API health</a>
+          </div>
+
+          <details class="panel test-breakdown">
+            <summary>What the tests prove</summary>
+            <dl>
+              <div><dt>Consent lifecycle</dt><dd>Grant, withdrawal, re-consent, purpose isolation, and stale notice denial.</dd></div>
+              <div><dt>Request boundary</dt><dd>Only the matching consumer and purpose can request allowed fields via READ; extra fields or WRITE operations are denied without a payload.</dd></div>
+              <div><dt>Revocation orchestration</dt><dd>Withdrawal cancels matching queued work, creates a pending job, delivers to the adapter, records honest failures, supports idempotent retries, and generates verifiable receipts.</dd></div>
+              <div><dt>Tamper-evident ledger</dt><dd>Recomputing every SHA-256 link detects modified, deleted, or reordered records. This demonstrates tamper-evidence, not legal compliance certification.</dd></div>
+            </dl>
+          </details>
           <p class="scope-note">Automated evidence proves prototype behavior only. It does not establish legal compliance or production security.</p>
         </section>
       </main>
     </div>
   </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden>
+    <span id="toast-icon"></span>
+    <span id="toast-msg"></span>
+    <button id="toast-close" type="button" aria-label="Dismiss notification">×</button>
+  </div>
+
   <script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>
 </html>

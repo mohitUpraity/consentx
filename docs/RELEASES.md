@@ -78,3 +78,11 @@
 - Added T-36/T-37 for cross-user isolation and operator-only notice publication.
 - Made the operator control binding null-safe so a stale template cannot crash the whole JavaScript app if it omits the new control.
 - Status: T-061/T-062 implemented and verified; all 37 isolated tests pass. This is a synthetic demo identity boundary, not real account authentication. Downstream adapter delivery, acknowledgements, retries, and privacy receipts remain open.
+
+## 2.0.0 — Revocation orchestration, My Privacy, receipts, and SHA-256 audit ledger
+
+- Added `adapters.py` with DB-persisted simulated consumer adapters (`notification-service`, `recommendation-service`, `analytics-service`), online/offline outage toggles, delivery (`POST /api/revocations/<id>/deliver`), idempotent retry (`POST /api/revocations/<id>/retry`), and manual queued-work simulation (`POST /api/pending-actions/simulate`).
+- Added `audit_chain.py` with a unified tamper-evident SHA-256 hash-chained `audit_ledger` (`GET /api/audit/verify`, `GET /api/audit/ledger`) covering consent, access decisions, notice publications, queued-work cancellations, deliveries, failures, retries, and acknowledgements.
+- Added **My Privacy** (`GET /api/my-privacy`) and downloadable **JSON / print-friendly HTML Privacy Receipts** (`GET /api/privacy-receipt/<id>`), including linked evidence IDs and the erasure-limitation disclaimer.
+- Added in-browser live diagnostics (`GET /api/diagnostics`), simulator quick-attack presets + out-of-scope field testing, dynamic suite test count (`test_38`), light/dark theme toggle, fixed CSS variables and 5th metric card layout, and added `gunicorn` + `render.yaml` for persistent Render deployment.
+- Status: 50 isolated automated tests pass (`evidence/test-results.txt`). Clean-start demo recording and R-11 submission packaging remain open.

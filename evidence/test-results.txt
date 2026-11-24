@@ -1,6 +1,5 @@
-ConsentX v1.7.0-dev4 verification — 2026-11-24
+ConsentX v2.0.0 verification — 2026-11-24T18:48:45Z
 Python 3.13.9
-
 Command: .venv/bin/python -m unittest discover -s tests -v
 
 test_01_health_and_version (test_ps002.PS002LifecycleTests.test_01_health_and_version) ... ok
@@ -40,8 +39,21 @@ test_34_revocation_queue_is_user_scoped_and_grants_do_not_queue (test_ps002.PS00
 test_35_withdrawal_cancels_only_matching_users_purpose_actions (test_ps002.PS002LifecycleTests.test_35_withdrawal_cancels_only_matching_users_purpose_actions) ... ok
 test_36_demo_identity_cannot_be_overridden_by_request_field (test_ps002.PS002LifecycleTests.test_36_demo_identity_cannot_be_overridden_by_request_field) ... ok
 test_37_notice_publication_requires_operator_session (test_ps002.PS002LifecycleTests.test_37_notice_publication_requires_operator_session) ... ok
+test_38_ui_test_count_matches_actual_suite (test_ps002.PS002LifecycleTests.test_38_ui_test_count_matches_actual_suite) ... ok
+test_39_audit_ledger_verifies_when_intact (test_ps002.PS002LifecycleTests.test_39_audit_ledger_verifies_when_intact) ... ok
+test_40_tampered_ledger_record_fails_verification (test_ps002.PS002LifecycleTests.test_40_tampered_ledger_record_fails_verification) ... ok
+test_41_deleted_ledger_record_fails_verification (test_ps002.PS002LifecycleTests.test_41_deleted_ledger_record_fails_verification) ... ok
+test_42_new_ledger_event_links_to_previous_hash (test_ps002.PS002LifecycleTests.test_42_new_ledger_event_links_to_previous_hash) ... ok
+test_43_revocation_delivery_creates_acknowledged_instruction (test_ps002.PS002LifecycleTests.test_43_revocation_delivery_creates_acknowledged_instruction) ... ok
+test_44_p3_withdrawal_cancels_p3_and_leaves_p1_usable (test_ps002.PS002LifecycleTests.test_44_p3_withdrawal_cancels_p3_and_leaves_p1_usable) ... ok
+test_45_unavailable_consumer_records_failure_honestly (test_ps002.PS002LifecycleTests.test_45_unavailable_consumer_records_failure_honestly) ... ok
+test_46_retry_succeeds_after_consumer_becomes_available (test_ps002.PS002LifecycleTests.test_46_retry_succeeds_after_consumer_becomes_available) ... ok
+test_47_duplicate_delivery_and_retry_are_idempotent (test_ps002.PS002LifecycleTests.test_47_duplicate_delivery_and_retry_are_idempotent) ... ok
+test_48_my_privacy_returns_permissions_services_and_unresolved (test_ps002.PS002LifecycleTests.test_48_my_privacy_returns_permissions_services_and_unresolved) ... ok
+test_49_privacy_receipt_json_html_and_isolation (test_ps002.PS002LifecycleTests.test_49_privacy_receipt_json_html_and_isolation) ... ok
+test_50_diagnostics_and_simulate_pending_work_guard (test_ps002.PS002LifecycleTests.test_50_diagnostics_and_simulate_pending_work_guard) ... ok
 
 ----------------------------------------------------------------------
-Ran 37 tests in 0.906s
+Ran 50 tests in 1.418s
 
 OK

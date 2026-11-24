@@ -56,4 +56,4 @@ ConsentX's proposed differentiator is purpose-aware downstream revocation orches
 
 ## First execution checkpoint
 
-Start with T-060, then follow task dependencies in `TASKS.md`. Preserve the existing PS-002 lifecycle suite while adding coverage. T-060–T-066 are implemented except T-063 (independent adapters); identity and operator gates T-061/T-062 are in place. Adapter delivery, acknowledgement, retries, and receipts are still future work. Do not mark roadmap tasks complete until the proof named in the task and `EVIDENCE.md` exists.
+T-060–T-072 are now implemented and verified in `v2.0.0` (50 passing automated tests in `evidence/test-results.txt`). Only T-073 (clean-start recorded judge walkthrough) remains open.

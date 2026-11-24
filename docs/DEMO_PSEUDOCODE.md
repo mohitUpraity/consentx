@@ -1,37 +1,69 @@
 # Mentor Demo Pseudocode
 
-This pseudocode follows the current `/api/data-access` decision order in `app.py`. Identity here means membership in the demo's synthetic user allowlist; this prototype does not implement login or production authentication.
+This pseudocode matches the `/api/data-access` enforcement handler and revocation pipeline in `app.py` (v2.0.0). Identity here is a session-pinned synthetic demo identity; this prototype does not implement production authentication.
 
 ```text
-function requestData(userId, purposeId):
-    if userId is not one of the configured synthetic demo users:
-        write audit decision DENY with reason UNKNOWN_USER
+function requestData(userId, purposeId, consumerId, operation, requestedFields):
+    activeUser = current session synthetic user
+    if activeUser is missing:
+        return HTTP 401 with decision DENY, reason NO_DEMO_IDENTITY, payload null
+
+    if userId is not in DEMO_USERS:
+        log DENY (UNKNOWN_USER) to access_decisions and SHA-256 audit_ledger
         return HTTP 403 with decision DENY, reason UNKNOWN_USER, payload null
 
-    if purposeId is not exactly P1, P2, or P3:
-        write audit decision DENY with reason INVALID_PURPOSE
+    if userId != activeUser:
+        log DENY (IDENTITY_MISMATCH) to access_decisions and SHA-256 audit_ledger
+        return HTTP 403 with decision DENY, reason IDENTITY_MISMATCH, payload null
+
+    if purposeId is not one of {P1, P2, P3}:
+        log DENY (INVALID_PURPOSE) to access_decisions and SHA-256 audit_ledger
         return HTTP 400 with decision DENY, reason INVALID_PURPOSE, payload null
 
+    policyFields = allowed fields for (consumerId, purposeId)
+    if requestedFields is empty/invalid -> reason = INVALID_REQUEST
+    else if policyFields is empty      -> reason = CONSUMER_PURPOSE_MISMATCH
+    else if operation != "READ"        -> reason = OPERATION_NOT_ALLOWED
+    else if not requestedFields <= policyFields -> reason = FIELD_SCOPE_EXCEEDED
+
     currentNotice = load active notice
-    latestEvent = load newest consent event for this user and this purpose
+    latestEvent = load newest consent event for (userId, purposeId)
 
-    if latestEvent does not exist:
-        reason = NO_ACTIVE_CONSENT
-    else if latestEvent.action is not grant:
-        reason = CONSENT_WITHDRAWN
-    else if latestEvent.noticeVersion/hash differs from currentNotice.version/hash:
-        reason = NOTICE_MISMATCH
-    else:
-        reason = ACTIVE_CONSENT
+    if reason is not set:
+        if latestEvent is missing               -> reason = NO_ACTIVE_CONSENT
+        else if latestEvent.action != "grant"   -> reason = CONSENT_WITHDRAWN
+        else if latestEvent.notice != currentNotice -> reason = NOTICE_MISMATCH
+        else                                    -> reason = ACTIVE_CONSENT
 
-    decision = ALLOW only when reason is ACTIVE_CONSENT; otherwise DENY
-    write an audit decision with decision, reason, user, purpose and current notice reference
+    decision = ALLOW iff reason == ACTIVE_CONSENT, else DENY
+    log decision + consumerId + operation + requestedFields to access_decisions and SHA-256 audit_ledger
 
-    if decision is DENY:
+    if decision == DENY:
         return HTTP 403 with decision DENY, reason, payload null
 
-    payload = the synthetic payload mapped to this exact purpose
-    return HTTP 200 with decision ALLOW, reason ACTIVE_CONSENT, payload
+    payload = filter(PURPOSES[purposeId].payload, requestedFields)
+    return HTTP 200 with decision ALLOW, reason ACTIVE_CONSENT, payload, decision_trace
 ```
 
-**Review status:** Compared with the current handler on 2026-11-24. It matches the app's user-before-purpose validation, reason codes, append-only latest-event policy, withdrawal-before-notice-mismatch order, audit-before-response behavior, and payload creation only after ALLOW. Automated lifecycle tests and the saved manual API capture provide behavioral evidence; see `evidence/test-results.txt` and `evidence/manual-lifecycle-responses.json`.
+## Withdrawal & Revocation Orchestration Pseudocode
+
+```text
+function withdrawConsent(userId, purposeId):
+    append WITHDRAW consent event tied to active notice (version + SHA-256)
+    append CONSENT_WITHDRAWN to SHA-256 audit_ledger
+    cancel QUEUED pending_actions matching (userId, purposeId, consumerId)
+    create revocation_job (status = PENDING, attempts = 0)
+    append REVOCATION_QUEUED and WORK_CANCELLED to SHA-256 audit_ledger
+
+function deliverRevocation(revocationId):
+    if job.status == ACKNOWLEDGED:
+        return HTTP 409 ALREADY_ACKNOWLEDGED (idempotent)
+    outcome = invokeConsumerAdapter(job)
+    increment attempts
+    if outcome.ok:
+        job.status = ACKNOWLEDGED (store adapter_event_id + receipt_digest)
+        append REVOCATION_DELIVERED and REVOCATION_ACKNOWLEDGED to SHA-256 audit_ledger
+    else:
+        job.status = FAILED (store last_error honestly; do not fake ack)
+        append REVOCATION_FAILED to SHA-256 audit_ledger
+```

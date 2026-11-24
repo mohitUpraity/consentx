@@ -1,39 +1,56 @@
 # ConsentX
 
-ConsentX is our PS-002 prototype: a synthetic service that records purpose-specific consent and enforces the latest consent state before a mock downstream API releases data.
+ConsentX is our **PS-002** prototype: a synthetic CampusPulse consent, policy-enforcement, and downstream revocation orchestration system.
 
-Current development version: **v1.7.0-dev4**. The v1.6.0 field-scoped simulator remains the current feature baseline; this is a local demo prototype, not a claim that PS-002 evidence and submission steps are complete.
+Current version: **v2.0.0**.
 
 ## Project boundary
 
 - **This folder is the project root:** `consentx/`.
-- The attached PS-002 brief is the product specification for this project.
-- ConsentX has its own implementation, tests and evidence. Do not treat files outside this folder as part of this project.
-- Use only synthetic users and data. This prototype is technical evidence, not legal certification or a claim of universal DPDP/GDPR compliance.
+- The attached `../PS-002.pdf` brief is the specification for this project.
+- Use only synthetic users and data. This prototype demonstrates technical enforcement and tamper-evident audit evidence, not legal certification or universal DPDP/GDPR compliance.
 
-## Current status
+## What ConsentX v2.0.0 implements
 
-**v1.6.0 field-scoped access and the first v1.7 revocation flow are implemented.** Requests identify the consumer, purpose, operation and requested fields. Withdrawal blocks new access, cancels matching queued synthetic work, and creates an auditable pending instruction for the associated service. Demo identities are session-pinned, and notice publishing requires a configured operator token. Delivery, acknowledgement, and retries are still roadmap work. The isolated suite now has 37 passing tests. Saved screen captures, a recorded clean-start demo, and submission proof remain tracked in [progress](docs/PROGRESS.md) and [evidence](docs/EVIDENCE.md).
+1. **Purpose- & Field-Scoped PEP (`/api/data-access`)**: Checks session-pinned synthetic identity, exact purpose (`P1`–`P3`), consumer service (`notification-service`, `recommendation-service`, `analytics-service`), `READ`-only operation, requested field subset, latest consent event, and active notice SHA-256 hash before releasing any synthetic field. Returns a 6-step `decision_trace`.
+2. **End-to-End Downstream Revocation Orchestration (`adapters.py`)**: Withdrawing consent blocks future requests immediately, cancels matching queued synthetic jobs (`pending_actions`), creates a `PENDING` revocation instruction, delivers it to the simulated consumer adapter (`PENDING → DELIVERED → ACKNOWLEDGED`), supports simulated consumer outages (`FAILED` + honest error tracking) and idempotent `RETRY` (`FAILED → ACKNOWLEDGED`).
+3. **My Privacy & Downloadable Receipts (`/api/my-privacy`, `/api/privacy-receipt/<id>`)**: Data-subject view showing current permissions, connected services and authorized fields, unresolved vs. acknowledged withdrawals, and downloadable JSON + print-friendly HTML/PDF receipts with linked evidence IDs and an explicit scope disclaimer.
+4. **Tamper-Evident SHA-256 Audit Ledger (`audit_chain.py`, `/api/audit/verify`)**: Unified append-only hash chain (`H_i = SHA256(H_{i-1} || CanonicalEvent_i)`) linking consent events, access decisions, notice publications, queued-work cancellations, deliveries, failures, retries, and acknowledgements, plus live verification and JSON/CSV exports.
+5. **In-Browser Live Diagnostics (`/api/diagnostics`)**: Real-time verification checks inside the Audit & Verification view, plus **50 passing automated tests** on isolated temporary SQLite databases.
+
+## Quick start (clean local demo)
+
+```bash
+cd consentx
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+rm -f instance/consentx.sqlite3
+CONSENTX_OPERATOR_TOKEN=demo-operator-secret python app.py
+```
+
+Open `http://127.0.0.1:5001`. Notice publishing requires entering the configured `CONSENTX_OPERATOR_TOKEN` in the **Notice versions** tab (no default operator token is shipped in code).
+
+## Run automated tests
+
+```bash
+.venv/bin/python -m unittest discover -s tests -v
+```
+
+## Production deployment (Render)
+
+`render.yaml` configures Gunicorn (`gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --threads 4`), `/api/health`, a persistent SQLite disk at `/var/data/consentx.sqlite3`, and generated `CONSENTX_SECRET_KEY` / `CONSENTX_OPERATOR_TOKEN` environment variables.
 
 ## Documents
 
 - [Requirements and acceptance criteria](docs/REQUIREMENTS.md)
 - [Task plan](docs/TASKS.md)
-- [v1.7 product direction and implementation roadmap](docs/ROADMAP_v1.7.md)
+- [v1.7/v2.0 product direction and roadmap](docs/ROADMAP_v1.7.md)
 - [Feature-by-feature test plan](docs/TEST_PLAN.md)
-- [Personal walkthrough, feature checks and demo script](docs/WALKTHROUGH.md)
-- [Judge brief and honest prototype framing](docs/JUDGE_BRIEF.md)
-- [Live review notes for the two reference apps](docs/COMPETITOR_REVIEW.md)
+- [Personal walkthrough and demo script](docs/WALKTHROUGH.md)
+- [Judge brief](docs/JUDGE_BRIEF.md)
 - [Architecture](docs/ARCHITECTURE.md)
-- [Technology choices and alternatives](docs/TECH_STACK.md)
+- [Mentor demo pseudocode](docs/DEMO_PSEUDOCODE.md)
 - [Release notes](docs/RELEASES.md)
-- [Evidence and demo plan](docs/EVIDENCE.md)
+- [Evidence index](docs/EVIDENCE.md)
 - [Progress tracker](docs/PROGRESS.md)
-- [PS-002 major task tracker](docs/TASKS.md#ps-002-major-task-tracker)
-- [Decision log](docs/DECISIONS.md)
-
-## Definition of done
-
-The PS-002 prototype is ready to present when all mandatory requirements in `docs/REQUIREMENTS.md` are implemented, the lifecycle suite has at least 12 passing tests, every evidence item in `docs/EVIDENCE.md` is captured, and the complete grant → allow → withdraw → deny → notice change → re-consent walkthrough works from a clean start.
-
-To enable notice publishing in the local demo, set `CONSENTX_OPERATOR_TOKEN` when starting Flask. The token has no default; do not commit it. The browser's operator access field unlocks publishing for that session. The synthetic identity picker is a demo boundary, not account authentication.
