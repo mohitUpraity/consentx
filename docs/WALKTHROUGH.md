@@ -1,6 +1,6 @@
 # ConsentX Personal Walkthrough and Demo Guide
 
-This is the hands-on guide for understanding, checking, and presenting every ConsentX feature. It describes the current **v1.5.0** build. Lifecycle, audit filters, timeline detail and older-event paging are browser verified. The redesigned v1.5 view still needs a saved screenshot and a recorded clean-start demo.
+This is the hands-on guide for understanding, checking, and presenting every ConsentX feature. It describes the current **v1.7.0-dev4** build. Lifecycle, audit filters, timeline detail, older-event paging, queued withdrawal status, and disabled operator publishing in student mode are browser verified. The current view still needs a saved screenshot and a recorded clean-start demo.
 
 ## How to use this guide
 
@@ -251,7 +251,7 @@ Expected: only matching rows. Try an invalid purpose such as `purpose_id=P9`; ex
 
 **Say in the demo:** “The test suite proves behavior with disposable databases, so its setup does not change the synthetic demo history or add a special allow path.”
 
-**Verification status:** Verified by T-25 and the full 28-test suite on 2026-11-24. See `docs/ARCHITECTURE.md` and `evidence/test-results.txt`.
+**Verification status:** Verified by T-25 and the full 32-test suite on 2026-11-24. See `docs/ARCHITECTURE.md` and `evidence/test-results.txt`.
 
 ## Feature 10 — Explain the PEP decision (v1.5)
 
@@ -265,7 +265,69 @@ Expected: only matching rows. Try an invalid purpose such as `purpose_id=P9`; ex
 
 **Say in the demo:** “The colored cards do not make the decision. Each request is evaluated again on the server, and the trace shows which rule stopped or released the payload.”
 
-**Verification status:** Tests T-26 and T-27 assert allow and withdrawal-deny traces. Test T-28 asserts the notice history ordering and active digest. Full result: 28 tests pass. A browser screenshot of the current v1.5 layout remains pending.
+**Verification status:** Tests T-26 and T-27 assert allow and withdrawal-deny traces. Test T-28 asserts the notice history ordering and active digest. Full result: 34 tests pass. A browser screenshot of the v1.5 layout remains pending.
+
+## Feature 11 — Concurrent request audit integrity (v1.7.0-dev1)
+
+**Problem addressed:** Multiple consumers may ask for data at the same time. The policy check and its audit record must complete together so each request has a traceable outcome.
+
+**What changed:** State-changing requests acquire SQLite's writer lock before reading policy state. This prevents simultaneous access requests from all reading first and then conflicting while upgrading their transactions to write their audit decisions. SQLite remains a single-writer database; this is appropriate for the local prototype, not a claim of high-scale throughput.
+
+**Verification:** T-32 sends 16 parallel data-access requests against a disposable database and checks that all 16 unique request IDs have exactly one stored audit row. Full suite: 32 passing tests, output at `evidence/test-results.txt`.
+
+**Demo line:** “Even when requests arrive together, each decision is evaluated and gets its own traceable audit record.”
+
+**Proof status:** Automated test passed. No concurrency UI has been added; this is backend integrity work.
+
+## Feature 12 — Withdrawal instruction queue (v1.7.0-dev2)
+
+**Problem addressed:** A withdrawal should create a follow-up action for the connected consumer, not just change a local consent label.
+
+**What it does:** A withdrawal is stored with a unique event ID. In the same SQLite transaction, ConsentX creates a pending revocation job for the consumer mapped to that purpose and records a `REVOCATION_QUEUED` audit event. The Consent Management view shows each user's pending instruction and its ID. `/api/revocations` supports an optional synthetic-user filter.
+
+**What it does not yet do:** The queued instruction has not been delivered to a simulated consumer. There is no acknowledgement, pending-work cancellation, retry, or proof of erasure yet. Those states are deliberately not shown as completed.
+
+**Try it:** Open Consent Management for Aarav, withdraw a currently granted purpose, then inspect the **Consumer instructions** list. Call `GET /api/revocations?user_id=student-001` or open Audit & Tests to find the linked withdrawal and queue event. Try the same endpoint with Mira's ID and confirm the jobs remain isolated.
+
+**Expected result:** Access to the withdrawn purpose is denied immediately. The matching consumer gets one `PENDING` job with a unique `REV-…` ID, zero attempts, and no acknowledgement timestamp. A grant creates no job; unrelated purpose jobs are unaffected.
+
+**Failure check:** Request an unknown user in `/api/revocations`; expect HTTP 400 and `UNKNOWN_USER`. Confirm that a pending job is described as pending, not acknowledged.
+
+**Demo line:** “ConsentX has blocked future access and recorded an instruction for the matching service. The consumer has not acknowledged it yet, so we show it as pending.”
+
+**Proof status:** T-33/T-34 pass as part of the 35-test isolated suite. The flow was also exercised in an isolated browser preview using a disposable database; no console errors were observed. See `evidence/v1.7-revocation-queue-check.md`.
+
+## Feature 13 — Cancel purpose-scoped queued work (v1.7.0-dev3)
+
+**What it does:** The demo database starts with two synthetic pending actions for each user and purpose. When a user withdraws a purpose, ConsentX changes only that user's still-queued actions for that purpose to `CANCELLED` and links them to the pending revocation ID. The `/api/pending-actions` endpoint and Consent Management view show both cancelled and still-queued work.
+
+**Try it:** Grant and withdraw P1 for Aarav. Inspect the two cancelled P1 reminders and confirm P2/P3 work is still queued. Change the user selector to Mira and confirm her actions remain queued.
+
+**Expected result:** Only matching purpose actions are cancelled; cancelled rows show the revocation ID. This prototype does not execute real reminders, recommendations, or exports.
+
+**Failure check:** Withdraw P3 and verify P1 reminders remain queued. Request an unsupported status in `/api/pending-actions?status=UNKNOWN`; expect HTTP 400 with `INVALID_STATUS`.
+
+**Demo line:** “The withdrawal reaches the simulated work queue: relevant queued work is cancelled, while unrelated-purpose work continues untouched.”
+
+**Proof status:** T-35 automated isolation check passed. Browser confirmed two P1 actions changed to CANCELLED while P2 and P3 actions remained QUEUED; see `evidence/v1.7-revocation-queue-check.md`.
+
+## Feature 14 — Session-pinned demo identity (v1.7.0-dev4)
+
+**What it does:** The selected synthetic user is pinned in a signed Flask session. A data, consent, state, audit, revocation, or pending-action request that names a different known user is denied. Switching the top-bar demo identity deliberately changes the session to that synthetic identity.
+
+**Limit:** This is a demo identity boundary, not real account authentication. The account selector is intentionally available for judges to switch between the two fictional users.
+
+**Verification:** T-36 attempts cross-user data, consent, state, and audit requests. Each attempt is denied with `IDENTITY_MISMATCH`; the data response has no payload.
+
+## Feature 15 — Operator-only notice publishing (v1.7.0-dev4)
+
+**What it does:** Notice publication is disabled in student mode. To unlock it, the operator enters a token configured in the server's `CONSENTX_OPERATOR_TOKEN` environment variable. The server checks the token with constant-time comparison and stores operator role in the signed session. The code field is cleared after submission; no default token is shipped.
+
+**Set up:** Start the local app with a token configured in the environment. Do not commit the token. Without configuration, the UI remains in student mode and the operator unlock endpoint returns `OPERATOR_NOT_CONFIGURED`.
+
+**Verification:** T-37 confirms a student cannot publish, an incorrect token is rejected, and the configured operator session can publish and audit a notice. Browser confirmed the publish button is disabled in student mode.
+
+**Limit:** The student selector is not real authentication. Treat this as an explicit role boundary for a synthetic prototype, not as production identity management.
 
 ## Suggested 3-minute PS-002 demo
 
@@ -281,7 +343,7 @@ If time is short, skip API commands during the live demo and keep them for verif
 
 ## What has and has not been verified
 
-- **Automated:** 28 tests passed on 2026-11-24; see `evidence/test-results.txt`.
+- **Automated:** 37 tests passed on 2026-11-24; see `evidence/test-results.txt`.
 - **Browser:** The main lifecycle, user/purpose/decision filters, and persistence after refresh were exercised on an isolated database on 2026-11-24. The current run log is `evidence/manual-walkthrough-2026-11-24.md`.
 - **Still to capture:** Browser screenshots or recording. P3-specific UI denial is now captured. Chrome blocked export-link clicks with `ERR_BLOCKED_BY_CLIENT`, but the live JSON and CSV endpoints returned HTTP 200 with matching row counts; see `evidence/live-export-ui-check.*`. Filtered API responses and full exports are saved under `evidence/`.
 

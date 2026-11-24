@@ -12,7 +12,7 @@ This is the top-level view of the challenge deliverables. The detailed tasks bel
 | B. Purpose-specific grant/withdraw and notice version/hash | R-03, R-04 | T-010–T-013, T-020, T-030 | In progress | Append-only grant/withdraw records include purpose, UTC timestamp and active notice version/hash; notice hash independently verified. |
 | C. Mock downstream consumer enforces current consent | R-05, R-06 | T-021–T-023, T-031 | In progress | API allows only matching current grants; missing, withdrawn, stale and unverifiable states deny with no payload. |
 | D. Audit records and export | R-07 | T-010, T-022, T-032, T-033, T-046, T-049, T-050, T-051 | In progress | API exports captured and consistency checked; full-history paging and filter reset verified in browser; saved screenshot remains pending. |
-| E. 12+ lifecycle/enforcement tests | R-08 | T-023, T-040, T-041, T-046, T-052 | Done | 28 tests pass; fixture explicitly uses a temporary DB, restores TESTING config, and avoids the demo DB; output saved at `evidence/test-results.txt`. |
+| E. 12+ lifecycle/enforcement tests | R-08 | T-023, T-040, T-041, T-046, T-052 | Done | 37 tests pass; fixture explicitly uses a temporary DB, restores TESTING config, and avoids the demo DB; output saved at `evidence/test-results.txt`. |
 | F. Required demo and pseudocode | R-09, R-10 | T-031, T-042–T-044 | In progress | Recorded grant → allow → withdraw → deny → notice change → stale deny → re-consent flow; pseudocode matches code. |
 | G. Hackathon submission items | R-11 | T-045 | Not started | Repository privacy/collaboration proof, the required structure PDF, and mentor-demo preparation have not been verified. |
 
@@ -50,8 +50,8 @@ This is the top-level view of the challenge deliverables. The detailed tasks bel
 
 ## M4 — Verification and demo
 
-- [x] T-040 Implement at least 12 distinct lifecycle/enforcement tests (R-08). Proof: 28 cases in `tests/test_ps002.py`, mapped in `docs/TEST_PLAN.md`.
-- [x] T-041 Run tests on isolated temporary databases; fix failures; save exact command/output and date (R-08). Proof: `evidence/test-results.txt` (28 passed).
+- [x] T-040 Implement at least 12 distinct lifecycle/enforcement tests (R-08). Proof: 32 cases in `tests/test_ps002.py`, mapped in `docs/TEST_PLAN.md`.
+- [x] T-041 Run tests on isolated temporary databases; fix failures; save exact command/output and date (R-08). Proof: `evidence/test-results.txt` (37 passed).
 - [x] T-042 Capture allow, withdrawal, deny, notice-change, stale-deny and re-consent evidence (R-03–R-09). Proof: `evidence/manual-lifecycle-responses.json`, `evidence/manual-lifecycle-audit.json`, and `evidence/manual-walkthrough-2026-11-24.md`.
 - [x] T-043 Write pseudocode that mirrors the final enforcement code (R-10). Proof: `docs/DEMO_PSEUDOCODE.md` reviewed against `app.py` and verified lifecycle evidence.
 - [ ] T-044 Rehearse and record a clean-start demo; verify exported audit trail matches the screen flow (R-09). Proof: demo artifact and evidence checklist.
@@ -62,7 +62,7 @@ This is the top-level view of the challenge deliverables. The detailed tasks bel
 
 ## Next PS-002 verification checkpoint
 
-At this checkpoint, 28 automated tests pass against isolated temporary databases. Expanded audit-row fields and full-history paging are confirmed in the live browser. The v1.5 control-center screenshot and recorded demo artifacts remain open.
+At this checkpoint, 32 automated tests pass against isolated temporary databases. Expanded audit-row fields and full-history paging are confirmed in the live browser. The v1.5 control-center screenshot and recorded demo artifacts remain open.
 
 ## Documentation rule for each update
 
@@ -71,3 +71,26 @@ Every feature update must add or revise its entry in `docs/WALKTHROUGH.md`: purp
 ## Suggested order
 
 Complete M0 first, then M1 and M2 before polishing M3. Do not record a feature as implemented merely because it appears in a mockup or README. Finish M4 against the running build.
+
+## ConsentX v1.7 implementation roadmap
+
+The product direction and scope are defined in [ROADMAP_v1.7.md](ROADMAP_v1.7.md). These tasks extend PS-002 without replacing the existing lifecycle requirements. Status begins Not started; update only with implementation and linked proof.
+
+| Task | Phase | Deliverable | Acceptance evidence | Status |
+|---|---|---|---|---|
+| T-060 | Foundation | Concurrent access-decision integrity | Parallel isolated requests produce a distinct request ID and exactly one audit row each; full suite passes. | [x] Done |
+| T-061 | Foundation | Explicit demo identity boundary and user isolation | Cross-user spoof attempt is rejected; supported demo identity flow is documented and tested. | [x] Done |
+| T-062 | Foundation | Operator authorization for notice publishing | Non-operator cannot publish; operator path and test evidence are documented. | [x] Done |
+| T-063 | Consumers | Three independent simulated consumer adapters | Each consumer has a registered purpose/field boundary and observable adapter behavior. | [ ] Not started |
+| T-064 | Consumers | Cross-consumer and field-scope policy cases | Authorized requests allow only permitted fields; mismatch and overreach deny with no payload. | [x] Done |
+| T-065 | Orchestration | Persistent revocation jobs | Withdrawal creates a unique job per affected consumer with status, timestamps, and attempts. | [x] Done |
+| T-066 | Orchestration | Purpose-scoped pending work cancellation | Affected queued work is cancelled/blocked; unrelated-purpose work remains queued. | [x] Done |
+| T-067 | Orchestration | Local adapter delivery and acknowledgement persistence | Adapter receives an instruction and its generated response is stored with a linked event ID. | [ ] Not started |
+| T-068 | Orchestration | Failure and retry path | Simulated outage remains unresolved, retries are counted, and later acknowledgement resolves it. | [ ] Not started |
+| T-069 | User privacy | My Privacy view | User can inspect permissions, recipients/fields, withdrawal progress, and unresolved actions. | [ ] Not started |
+| T-070 | User privacy | Downloadable privacy receipt | Receipt links consent, notice, affected services, pending work, and acknowledgements; limitation is clear. | [ ] Not started |
+| T-071 | Evidence | Unified event linkage and integrity verification | Linked history validates; altered event is detected by an automated test. | [ ] Not started |
+| T-072 | Verification | End-to-end scenario test set | Withdrawal blocks the P3 analytics consumer, affects only P3 work, supports retry/ack, and leaves P1 usable. | [ ] Not started |
+| T-073 | Demo | Clean-start judge walkthrough | Recorded success and failure paths match stored user receipt and operator evidence. | [ ] Not started |
+
+**Execution rule:** T-060–T-062, T-064–T-066 are implemented; T-063 independent adapters remain open. T-067–T-068 extend the revocation job lifecycle with delivery, acknowledgement, and retry; T-069–T-070 consume that event model; T-071–T-073 close verification and demo readiness. Keep actual status in sync with `ROADMAP_v1.7.md`, `TEST_PLAN.md`, `WALKTHROUGH.md`, `RELEASES.md`, and `PROGRESS.md`.

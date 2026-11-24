@@ -1,4 +1,23 @@
-# ConsentX Architecture (v1.5.0)
+# ConsentX Architecture (v1.7.0-dev4)
+
+## Planned direction
+
+The implemented path includes the PS-002 consent and request-time enforcement prototype, a pending revocation queue, and purpose-scoped cancellation of synthetic queued work. Later v1.7 tasks add adapter delivery, acknowledgements, retries, and user-readable receipts. See [`ROADMAP_v1.7.md`](ROADMAP_v1.7.md); planned components below must not be read as implemented components.
+
+Implemented in v1.7.0-dev4 so far: student routes use a signed Flask session identity; notice publication requires a separate operator session unlocked by a configured environment token. Each withdrawal writes a purpose-mapped pending job and `REVOCATION_QUEUED` system event in the same SQLite transaction as the consent event, then cancels only that user's queued actions for the withdrawn purpose. The user-filtered `/api/revocations` and `/api/pending-actions` endpoints and Consent Management list expose the stored state. Adapter delivery and acknowledgement remain planned. The selectable synthetic identity is not real account authentication.
+
+```mermaid
+flowchart LR
+  U[Student privacy center] --> C[Consent and policy engine]
+  C --> PEP[Request-time enforcement]
+  PEP -->|allow / deny| L[Unified evidence ledger]
+  C -->|withdrawal| R[Revocation orchestrator]
+  R -->|notify / retry| S[Simulated consumers]
+  R -->|cancel affected work| J[Pending actions]
+  S -->|acknowledgement| R
+  R --> L
+  L --> Q[Privacy receipt and operator timeline]
+```
 
 ## Request path
 

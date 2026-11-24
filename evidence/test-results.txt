@@ -1,8 +1,8 @@
-ConsentX PS-002 verification
-Application version: 1.5.0
-Date: 2026-11-24
+ConsentX v1.7.0-dev4 verification — 2026-11-24
+Python 3.13.9
+
 Command: .venv/bin/python -m unittest discover -s tests -v
-Python: Python 3.13.9
+
 test_01_health_and_version (test_ps002.PS002LifecycleTests.test_01_health_and_version) ... ok
 test_02_exactly_three_purposes_and_demo_users (test_ps002.PS002LifecycleTests.test_02_exactly_three_purposes_and_demo_users) ... ok
 test_03_missing_consent_denied_without_payload (test_ps002.PS002LifecycleTests.test_03_missing_consent_denied_without_payload) ... ok
@@ -31,8 +31,17 @@ test_25_test_fixture_isolated_from_demo_database (test_ps002.PS002LifecycleTests
 test_26_allow_response_explains_every_policy_check (test_ps002.PS002LifecycleTests.test_26_allow_response_explains_every_policy_check) ... ok
 test_27_withdrawal_trace_shows_why_payload_was_withheld (test_ps002.PS002LifecycleTests.test_27_withdrawal_trace_shows_why_payload_was_withheld) ... ok
 test_28_notice_history_is_newest_first_and_hash_linked (test_ps002.PS002LifecycleTests.test_28_notice_history_is_newest_first_and_hash_linked) ... ok
+test_29_out_of_scope_field_is_denied_without_payload (test_ps002.PS002LifecycleTests.test_29_out_of_scope_field_is_denied_without_payload) ... ok
+test_30_consumer_cannot_request_another_purposes_fields (test_ps002.PS002LifecycleTests.test_30_consumer_cannot_request_another_purposes_fields) ... ok
+test_31_non_read_operation_is_denied (test_ps002.PS002LifecycleTests.test_31_non_read_operation_is_denied) ... ok
+test_32_concurrent_access_requests_keep_unique_audit_ids (test_ps002.PS002LifecycleTests.test_32_concurrent_access_requests_keep_unique_audit_ids) ... ok
+test_33_withdrawal_creates_pending_consumer_revocation (test_ps002.PS002LifecycleTests.test_33_withdrawal_creates_pending_consumer_revocation) ... ok
+test_34_revocation_queue_is_user_scoped_and_grants_do_not_queue (test_ps002.PS002LifecycleTests.test_34_revocation_queue_is_user_scoped_and_grants_do_not_queue) ... ok
+test_35_withdrawal_cancels_only_matching_users_purpose_actions (test_ps002.PS002LifecycleTests.test_35_withdrawal_cancels_only_matching_users_purpose_actions) ... ok
+test_36_demo_identity_cannot_be_overridden_by_request_field (test_ps002.PS002LifecycleTests.test_36_demo_identity_cannot_be_overridden_by_request_field) ... ok
+test_37_notice_publication_requires_operator_session (test_ps002.PS002LifecycleTests.test_37_notice_publication_requires_operator_session) ... ok
 
 ----------------------------------------------------------------------
-Ran 28 tests in 0.474s
+Ran 37 tests in 0.906s
 
 OK

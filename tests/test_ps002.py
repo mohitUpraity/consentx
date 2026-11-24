@@ -1,6 +1,8 @@
 import csv
+from concurrent.futures import ThreadPoolExecutor
 import hashlib
 import io
+import threading
 import tempfile
 import unittest
 from pathlib import Path
@@ -17,21 +19,43 @@ class PS002LifecycleTests(unittest.TestCase):
         self.db_patch = patch.object(consentx, "DB_PATH", self.db_path)
         self.db_patch.start()
         consentx.init_db()
+        self.original_operator_token = consentx.app.config.get("OPERATOR_TOKEN")
+        consentx.app.config["OPERATOR_TOKEN"] = "test-operator-token"
         consentx.app.config.update(TESTING=True)
         self.client = consentx.app.test_client()
+        self.select_user("student-001")
 
     def tearDown(self):
         self.db_patch.stop()
         consentx.app.config.update(TESTING=self.original_testing)
+        if self.original_operator_token is None:
+            consentx.app.config.pop("OPERATOR_TOKEN", None)
+        else:
+            consentx.app.config["OPERATOR_TOKEN"] = self.original_operator_token
         self.temp.cleanup()
 
+    def select_user(self, user):
+        response = self.client.post("/api/demo-session", json={"user_id": user})
+        self.assertEqual(response.status_code, 200)
+
     def consent(self, purpose="P1", action="grant", user="student-001"):
+        self.select_user(user)
         return self.client.post("/api/consent", json={"user_id": user, "purpose_id": purpose, "action": action})
 
     def access(self, purpose="P1", user="student-001"):
-        return self.client.post("/api/data-access", json={"user_id": user, "purpose_id": purpose})
+        if user in consentx.DEMO_USERS:
+            self.select_user(user)
+        consumer, fields = {
+            "P1": ("notification-service", ["channel", "upcoming_event_ids"]),
+            "P2": ("recommendation-service", ["synthetic_interests", "suggested_event_ids"]),
+            "P3": ("analytics-service", ["aggregation", "feature_use_counts"]),
+        }.get(purpose, ("notification-service", ["channel"]))
+        return self.client.post("/api/data-access", json={"user_id": user, "purpose_id": purpose,
+            "consumer_id": consumer, "operation": "READ", "requested_fields": fields})
 
     def publish_v2(self):
+        authorized = self.client.post("/api/operator-session", json={"token": "test-operator-token"})
+        self.assertEqual(authorized.status_code, 200)
         return self.client.post("/api/notices", json={"version": "2.0", "text": "Updated CampusPulse purposes."})
 
     def audit(self):
@@ -184,6 +208,7 @@ class PS002LifecycleTests(unittest.TestCase):
         self.consent(user="student-001")
         self.access(user="student-001")
         self.consent(user="student-002")
+        self.select_user("student-001")
         rows = self.client.get("/api/audit?format=json&user_id=student-001").get_json()
         self.assertTrue(rows)
         self.assertEqual({row["user_id"] for row in rows}, {"student-001"})
@@ -236,7 +261,7 @@ class PS002LifecycleTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(body["decision"], "ALLOW")
         self.assertEqual([step["status"] for step in body["decision_trace"]],
-                         ["PASS", "PASS", "PASS", "PASS", "RELEASED"])
+                         ["PASS", "PASS", "PASS", "PASS", "PASS", "RELEASED"])
         self.assertTrue(body["payload"])
 
     def test_27_withdrawal_trace_shows_why_payload_was_withheld(self):
@@ -247,8 +272,137 @@ class PS002LifecycleTests(unittest.TestCase):
         self.assertEqual(response.status_code, 403)
         self.assertEqual(body["decision"], "DENY")
         self.assertIsNone(body["payload"])
-        self.assertEqual(body["decision_trace"][2]["status"], "FAIL")
+        self.assertEqual(body["decision_trace"][3]["status"], "FAIL")
         self.assertEqual(body["decision_trace"][-1]["status"], "WITHHELD")
+
+    def test_29_out_of_scope_field_is_denied_without_payload(self):
+        self.consent("P1")
+        response = self.client.post("/api/data-access", json={"user_id":"student-001","purpose_id":"P1",
+            "consumer_id":"notification-service","operation":"READ",
+            "requested_fields":["channel","student_email"]})
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.get_json()["reason_code"], "FIELD_SCOPE_EXCEEDED")
+        self.assertIsNone(response.get_json()["payload"])
+
+    def test_30_consumer_cannot_request_another_purposes_fields(self):
+        self.consent("P1")
+        response = self.client.post("/api/data-access", json={"user_id":"student-001","purpose_id":"P1",
+            "consumer_id":"analytics-service","operation":"READ","requested_fields":["feature_use_counts"]})
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.get_json()["reason_code"], "CONSUMER_PURPOSE_MISMATCH")
+
+    def test_31_non_read_operation_is_denied(self):
+        self.consent("P1")
+        response = self.client.post("/api/data-access", json={"user_id":"student-001","purpose_id":"P1",
+            "consumer_id":"notification-service","operation":"WRITE","requested_fields":["channel"]})
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.get_json()["reason_code"], "OPERATION_NOT_ALLOWED")
+
+    def test_32_concurrent_access_requests_keep_unique_audit_ids(self):
+        self.consent("P1")
+        request_count = 16
+        barrier = threading.Barrier(request_count)
+
+        def send_request(_):
+            with consentx.app.test_client() as client:
+                client.post("/api/demo-session", json={"user_id": "student-001"})
+                barrier.wait(timeout=5)
+                return client.post("/api/data-access", json={"user_id": "student-001", "purpose_id": "P1",
+                    "consumer_id": "notification-service", "operation": "READ",
+                    "requested_fields": ["channel"]})
+
+        with ThreadPoolExecutor(max_workers=request_count) as pool:
+            responses = list(pool.map(send_request, range(request_count)))
+
+        self.assertTrue(all(response.status_code == 200 for response in responses))
+        request_ids = [response.get_json()["request_id"] for response in responses]
+        self.assertEqual(len(set(request_ids)), request_count)
+        with consentx.db_session() as con:
+            rows = con.execute("SELECT request_id FROM access_decisions").fetchall()
+        self.assertEqual(len(rows), request_count)
+        self.assertEqual({row["request_id"] for row in rows}, set(request_ids))
+
+    def test_33_withdrawal_creates_pending_consumer_revocation(self):
+        self.consent("P3")
+        response = self.consent("P3", "withdraw")
+        body = response.get_json()
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(len(body["revocations"]), 1)
+        queued = body["revocations"][0]
+        self.assertEqual(queued["consumer_id"], "analytics-service")
+        self.assertEqual(queued["status"], "PENDING")
+        self.assertTrue(queued["revocation_id"].startswith("REV-"))
+        jobs = self.client.get("/api/revocations?user_id=student-001").get_json()["revocations"]
+        self.assertEqual(len(jobs), 1)
+        self.assertEqual(jobs[0]["withdrawal_event_id"], body["event_id"])
+        self.assertEqual(jobs[0]["attempts"], 0)
+        self.assertIsNone(jobs[0]["acknowledged_at"])
+        audit = self.audit()
+        self.assertTrue(any(row["result"] == "REVOCATION_QUEUED" for row in audit))
+
+    def test_34_revocation_queue_is_user_scoped_and_grants_do_not_queue(self):
+        self.consent("P1", user="student-001")
+        self.consent("P1", "withdraw", user="student-001")
+        self.consent("P2", "withdraw", user="student-002")
+        self.consent("P3", user="student-002")
+        self.select_user("student-001")
+        aarav_jobs = self.client.get("/api/revocations?user_id=student-001").get_json()["revocations"]
+        all_jobs = self.client.get("/api/revocations").get_json()
+        mira_client = consentx.app.test_client()
+        mira_client.post("/api/demo-session", json={"user_id": "student-002"})
+        mira_jobs = mira_client.get("/api/revocations?user_id=student-002").get_json()["revocations"]
+        self.assertEqual({job["purpose_id"] for job in aarav_jobs}, {"P1"})
+        self.assertEqual({job["purpose_id"] for job in mira_jobs}, {"P2"})
+        self.assertEqual(all_jobs["total"], 1)
+        invalid = self.client.get("/api/revocations?user_id=unknown")
+        self.assertEqual(invalid.status_code, 400)
+        self.assertEqual(invalid.get_json()["reason_code"], "UNKNOWN_USER")
+
+    def test_35_withdrawal_cancels_only_matching_users_purpose_actions(self):
+        before = self.client.get("/api/pending-actions?user_id=student-001").get_json()["pending_actions"]
+        self.assertEqual(len(before), 6)
+        self.consent("P1")
+        withdrawal = self.consent("P1", "withdraw").get_json()
+        self.assertEqual(withdrawal["revocations"][0]["pending_actions_cancelled"], 2)
+        actions = self.client.get("/api/pending-actions?user_id=student-001").get_json()["pending_actions"]
+        p1_actions = [row for row in actions if row["purpose_id"] == "P1"]
+        other_purposes = [row for row in actions if row["purpose_id"] != "P1"]
+        mira_client = consentx.app.test_client()
+        mira_client.post("/api/demo-session", json={"user_id": "student-002"})
+        mira_actions = mira_client.get("/api/pending-actions?user_id=student-002").get_json()["pending_actions"]
+        self.assertEqual({row["status"] for row in p1_actions}, {"CANCELLED"})
+        self.assertEqual({row["revocation_id"] for row in p1_actions},
+                         {withdrawal["revocations"][0]["revocation_id"]})
+        self.assertTrue(all(row["status"] == "QUEUED" for row in other_purposes))
+        self.assertTrue(all(row["status"] == "QUEUED" for row in mira_actions))
+
+    def test_36_demo_identity_cannot_be_overridden_by_request_field(self):
+        self.consent("P1", user="student-001")
+        response = self.client.post("/api/data-access", json={"user_id": "student-002", "purpose_id": "P1",
+            "consumer_id": "notification-service", "operation": "READ", "requested_fields": ["channel"]})
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.get_json()["reason_code"], "IDENTITY_MISMATCH")
+        self.assertIsNone(response.get_json()["payload"])
+        state_response = self.client.get("/api/state?user_id=student-002")
+        self.assertEqual(state_response.status_code, 403)
+        audit_response = self.client.get("/api/audit?format=json&user_id=student-002")
+        self.assertEqual(audit_response.status_code, 403)
+        consent_response = self.client.post("/api/consent", json={"user_id": "student-002", "purpose_id": "P1", "action": "grant"})
+        self.assertEqual(consent_response.status_code, 403)
+        self.assertEqual(consent_response.get_json()["reason_code"], "IDENTITY_MISMATCH")
+
+    def test_37_notice_publication_requires_operator_session(self):
+        payload = {"version": "2.0", "text": "Updated notice for operator authorization test."}
+        denied = self.client.post("/api/notices", json=payload)
+        self.assertEqual(denied.status_code, 403)
+        self.assertEqual(denied.get_json()["reason_code"], "OPERATOR_AUTH_REQUIRED")
+        wrong = self.client.post("/api/operator-session", json={"token": "wrong"})
+        self.assertEqual(wrong.status_code, 403)
+        self.assertEqual(wrong.get_json()["reason_code"], "OPERATOR_AUTH_REQUIRED")
+        allowed = self.client.post("/api/operator-session", json={"token": "test-operator-token"})
+        self.assertEqual(allowed.status_code, 200)
+        published = self.client.post("/api/notices", json=payload)
+        self.assertEqual(published.status_code, 201)
 
     def test_28_notice_history_is_newest_first_and_hash_linked(self):
         self.publish_v2()

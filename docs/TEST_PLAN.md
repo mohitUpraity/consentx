@@ -1,6 +1,6 @@
 # Feature Test Plan
 
-This plan turns each PS-002 requirement into reproducible checks. It is **not** itself a test result. The 28-case automated suite passed for the v1.5.0 code baseline; see `evidence/test-results.txt` for the exact run and [WALKTHROUGH.md](WALKTHROUGH.md) for plain-language explanations and presenter notes.
+This plan turns each PS-002 requirement into reproducible checks. It is **not** itself a test result. The 37-case automated suite passed for v1.7.0-dev4; see `evidence/test-results.txt` for the exact run and [WALKTHROUGH.md](WALKTHROUGH.md) for plain-language explanations and presenter notes.
 
 ## What PS-002 failure each feature addresses
 
@@ -65,7 +65,7 @@ Do not run a case against a database already used by a previous run unless the c
 
 ## Automated lifecycle/enforcement cases
 
-The current suite contains 28 independent automated cases. Tests call the Flask test client against a temporary database and assert HTTP status and response fields. Keep them repeatable without relying on order.
+The current suite contains 37 independent automated cases. Tests call the Flask test client against a temporary database and assert HTTP status and response fields. Keep them repeatable without relying on order.
 
 | Test | Setup/action | Expected result |
 |---|---|---|
@@ -97,8 +97,14 @@ The current suite contains 28 independent automated cases. Tests call the Flask 
 | T-26 Allow decision trace | Grant P1 and request P1 | Response contains PASS for user, purpose, latest consent and notice, then RELEASED; payload is present. |
 | T-27 Withdrawal decision trace | Grant P1, withdraw P1, request P1 | Latest-consent check fails; final trace is WITHHELD; response is DENY with `payload: null`. |
 | T-28 Notice history | Publish v2, then fetch state | History is newest first, contains both stored versions, and current history digest equals the active notice digest. |
+| T-32 Concurrent access audit integrity | Grant P1, then issue 16 simultaneous scoped requests against the isolated SQLite DB. | All requests return ALLOW; every response has a distinct request ID; exactly 16 matching access-decision rows persist without a lock error. |
+| T-33 Withdrawal creates a pending consumer revocation | Grant and withdraw P3, then read `/api/revocations`. | Withdrawal response includes the linked event ID and pending revocation ID for `analytics-service`; one pending row is persisted with zero attempts and no acknowledgement. |
+| T-34 Revocation queue is user-scoped | Withdraw different purposes for both synthetic users, grant another purpose, and query the queue. | Each user sees only their revocations; grants create no jobs; unknown-user filter returns 400. |
+| T-35 Withdrawal cancels only matching pending actions | Load seeded actions for both users, withdraw P1 for student-001, and reload the action list. | Both P1 queued actions for that user become CANCELLED and link to the revocation ID; P2/P3 and student-002 actions stay QUEUED. |
+| T-36 Demo identity prevents request-field spoofing | Select student-001 and send a data, consent, state, or audit request naming student-002. | Cross-user requests return 403 `IDENTITY_MISMATCH`; no payload or other user's state is returned. |
+| T-37 Notice publication requires operator session | Publish as a student, try a wrong code, unlock with the configured test operator token, publish again. | Student and wrong code are denied; operator session publishes and writes the notice/audit event. |
 
-**Verification note:** T-046 writes audit rows for unknown users and purposes; T-12/T-13 assert those rows. Full and filtered JSON/CSV outputs from the current manual run are saved under `evidence/`. Keep R-07 complete only while those artifacts and automated checks remain valid.
+**Verification note:** T-046 writes audit rows for unknown users and purposes; T-12/T-13 assert those rows. T-32 exercises concurrent access requests and their unique audit rows. T-33/T-34 verify persisted withdrawal instructions. Full and filtered JSON/CSV outputs from the current manual run are saved under `evidence/`. Keep R-07 complete only while those artifacts and automated checks remain valid.
 
 **v1.2.0 verification:** Automated cases T-20–T-24 cover API filters and filtered exports. Browser interaction for user, purpose, and ALLOW/DENY filters was exercised on 2026-11-24; the run log and filtered export outputs are under `evidence/`. A saved filtered-screen screenshot and clicking the UI download links remain pending.
 
