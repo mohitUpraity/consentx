@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+.venv/
+instance/*.sqlite3
+instance/*.db
+evidence/*.csv
+evidence/*.json
+evidence/*.png
+evidence/*.txt
+evidence/*.mp4
+.DS_Store
+.env

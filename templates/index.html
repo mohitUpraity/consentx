@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ConsentX · CampusPulse</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header><div><span class="eyebrow">CAMPUSPULSE · SYNTHETIC DEMO</span><h1>Your data, your choice.</h1><p>Choose separately what CampusPulse may use. You can withdraw any choice later.</p></div><span class="pill" id="notice-pill">Loading notice…</span></header>
+  <main>
+    <section class="notice card"><div><span class="eyebrow">CURRENT PRIVACY NOTICE</span><h2 id="notice-version">—</h2><p id="notice-text"></p><code id="notice-hash"></code></div><div class="operator"><label for="user-select">Demo account</label><select id="user-select">{% for uid, name in users.items() %}<option value="{{ uid }}">{{ name }}</option>{% endfor %}</select><button id="publish-notice" class="secondary">Publish notice v2</button></div></section>
+    <section><div class="section-heading"><div><span class="eyebrow">PURPOSE CONTROLS</span><h2>Choose what to allow</h2></div><span class="muted">Each purpose is independent</span></div><div id="purpose-list" class="purpose-list"></div></section>
+    <section class="card consumer"><div><span class="eyebrow">MOCK DOWNSTREAM CONSUMER</span><h2>Request data</h2><p>Each request checks the latest consent before releasing a synthetic payload.</p></div><div class="request-controls"><select id="request-purpose"></select><button id="request-data">Send request</button></div><pre id="request-result">Choose a purpose and send a request.</pre></section>
+    <section class="card audit"><div class="section-heading"><div><span class="eyebrow">AUDIT TRAIL</span><h2>Recent events</h2></div><div class="buttons"><a href="/api/audit?format=json">Export JSON</a><a href="/api/audit?format=csv">Export CSV</a></div></div><div id="audit-list" class="audit-list"></div></section>
+    <p class="footnote">Synthetic demo only. This prototype demonstrates technical consent evidence; it is not legal certification.</p>
+  </main>
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body></html>
